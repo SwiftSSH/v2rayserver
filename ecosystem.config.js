@@ -14,8 +14,8 @@ module.exports = {
       "ref"  : "origin/main",
       "repo" : "git@github.com:SwiftSSH/v2rayserver.git",
       "path" : "/home/paul/v2rayserver",
-      "pre-setup" : "pip3 install -r requirements.txt",
-      "post-deploy" : "npm install && npm run pm2-restart",
+      // "pre-setup" : "pip3 install -r requirements.txt",
+      "post-deploy" : "pip3 install -r requirements.txt && npm install && npm run pm2-restart",
       "env"  : {
         "NODE_ENV": "production"
       }
