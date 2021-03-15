@@ -11,11 +11,11 @@ module.exports = {
       "user" : "paul",
       // Multi host is possible, just by passing IPs/hostname as an array
       "host" : ["142.93.211.124"],
-      "ref"  : "origin/master",
+      "ref"  : "origin/main",
       "repo" : "git@github.com:SwiftSSH/v2rayserver.git",
       "path" : "/home/paul/v2ray",
       "pre-setup" : "pip3 install -r requirements.txt",
-      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.config.js",
+      "post-deploy" : "npm install && npm run pm2-restart",
       "env"  : {
         "NODE_ENV": "production"
       }
