@@ -24,8 +24,8 @@ NGINX.prototype.reconfig = async function() {
 NGINX.prototype.getData = function () {
   return { 
     server_name: ["koodeyo.com"],
-    ssl_certificate: "/etc/letsencrypt/live/koodeyo.com/fullchain.pem",
-    ssl_certificate_key: "/etc/letsencrypt/live/koodeyo.com/privkey.pem",
+    ssl_certificate: "/etc/letsencrypt/live/ind.koodeyo.com/fullchain.pem",
+    ssl_certificate_key: "/etc/letsencrypt/live/ind.koodeyo.com/privkey.pem",
     panelPort: 5000
   };
 };

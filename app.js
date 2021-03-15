@@ -2,7 +2,6 @@ const Express = require('express');
 const V2RAY = require('./v2ray');
 const path = require('path');
 const bodyParser = require('body-parser');
-const rateLimit = require("express-rate-limit");
 const cookieParser = require('cookie-parser');
 let authMiddleWare = require("./routes/middleware");
 let app = Express();
@@ -16,12 +15,6 @@ let v2rayService = new V2RAY({
   ProxyFlag: 'api'
 });
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs,
-  message: "Too many accounts created from this IP, please try again after an hour"
-});
-
 app.use(cookieParser());
 app.use(authMiddleWare);
 app.set('views', path.join(__dirname, 'views'));
@@ -33,7 +26,6 @@ app.use(Express.static(path.join(__dirname, 'static')));
 app.use('/', require('./routes/index'));
 app.use('/server', require('./routes/server'));
 app.use('/v2ray', require('./routes/v2ray'));
-app.use(['/v2ray', '/server'], limiter);
 
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
