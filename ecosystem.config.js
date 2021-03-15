@@ -11,7 +11,7 @@ module.exports = {
       "user" : "paul",
       // Multi host is possible, just by passing IPs/hostname as an array
       "host" : ["142.93.211.124"],
-      "ref"  : "origin/main",
+      "ref"  : "origin/test",
       "repo" : "git@github.com:SwiftSSH/v2rayserver.git",
       "path" : "/home/paul/v2rayserver",
       // "pre-setup" : "pip3 install -r requirements.txt",
