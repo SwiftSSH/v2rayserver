@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ant-design-vue@1.3.10/dist/antd.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.11.1/lib/theme-chalk/display.css">
+    <link rel="stylesheet" href="/css/custom.css">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+    <title><%= title %></title>
+    <style>
+        .ant-layout-content-pages {
+            margin: 24px 16px;
+        }
+        body {
+            text-transform: capitalize;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ant-design-vue@1.3.10/dist/antd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous"></script>
+    <script src="/base64/base64.min.js"></script>
+    <script src="/axios/axios.min.js"></script>
+    <script src="/qs/qs.min.js"></script>
+    <script src="/qrcode/qrious.min.js"></script>
+    <script src="/clipboard/clipboard.min.js"></script>
+    <script src="/js/util.js"></script>
+    <script src="/js/axios-init.js"></script>
+    <script src="/js/v2_classes.js"></script>
+    <script>
+        const basePath = '/';
+        axios.defaults.baseURL = basePath;
+        Vue.prototype.$message.config({
+            duration: 10,
+            maxCount: 5,
+        });
+
+        window.formatSecond = second => {
+            if (second < 60) {
+                return second.toFixed(0) + ' seconds';
+            } else if (second < 3600) {
+                return (second / 60).toFixed(0) + ' minutes';
+            } else if (second < 3600 * 24) {
+                return (second / 3600).toFixed(0) + ' hours';
+            } else {
+                return (second / 3600 / 24).toFixed(0) + ' days';
+            }
+        };
+    </script>
+    <%- content %>
+</body>
+</html>

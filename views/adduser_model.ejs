@@ -1,0 +1,92 @@
+<a-modal id="adduser-modal" v-model="adduserModal.visible" :title="adduserModal.title" @ok="adduserModal.ok"
+         :confirm-loading="adduserModal.confirmLoading" :closable="true" :mask-closable="false"
+         :ok-text="adduserModal.okText" cancel-text="close">
+    <a-form layout="inline">
+        <a-form-item label="remark">
+            <a-input v-model.trim="adduserModal.inbound.remark"></a-input>
+        </a-form-item>
+        <a-form-item label="email">
+            <a-input v-model.trim="adduserModal.inbound.email"></a-input>
+        </a-form-item>
+
+        <a-form v-if="adduserModal.inbound.protocol === Protocols.VMESS" layout="inline">
+            <a-form-item label="id">
+                <a-input v-model.trim="adduserModal.inbound.settings.vmesses[0].id"></a-input>
+            </a-form-item>
+            <a-form-item label="alter id">
+                <a-input type="number" v-model.number="adduserModal.inbound.settings.vmesses[0].alterId"></a-input>
+            </a-form-item>
+        </a-form>
+
+        <a-form v-if="adduserModal.inbound.protocol === Protocols.VLESS"layout="inline">
+            <a-form-item label="id">
+                <a-input v-model.trim="adduserModal.inbound.settings.vlesses[0].id"></a-input>
+            </a-form-item>
+        </a-form>
+
+        <a-form v-if="adduserModal.inbound.protocol === Protocols.HTTP || adduserModal.inbound.protocol === Protocols.SOCKS" layout="inline">
+            <a-form-item label="username">
+                <a-input v-model.trim="adduserModal.inbound.settings.accounts[0].user"></a-input>
+            </a-form-item>
+            <a-form-item label="password">
+                <a-input v-model.trim="adduserModal.inbound.settings.accounts[0].pass"></a-input>
+            </a-form-item>
+        </a-form>
+
+        <a-form v-if="adduserModal.inbound.protocol === Protocols.TROJAN" layout="inline">
+            <a-form-item label="password">
+                <a-input v-model.trim="adduserModal.inbound.settings.clients[0].password"></a-input>
+            </a-form-item>
+        </a-form>
+
+        <a-form-item label="Expires (seconds, hours, days, months, years)">
+            <a-input v-model.trim="adduserModal.inbound.expires"></a-input>
+        </a-form-item>
+    </a-form>
+</a-modal>
+<script>
+
+    const adduserModal = {
+        title: '',
+        visible: false,
+        confirmLoading: false,
+        okText: 'confirm',
+        confirm: null,
+        inbound: new Inbound(),
+        ok() {
+            execute(adduserModal.confirm);
+        },
+        show({ title='', okText='confirm', inbound=null, confirm=()=>{}, protocol }) {
+            this.title = title;
+            this.okText = okText;
+            if (inbound) {
+                this.inbound = Inbound.fromJson(inbound.toJson());
+                this.inbound.expires = inbound.expires;
+            } else {
+                this.inbound = new Inbound(null, null, protocol);
+            }
+            this.confirm = confirm;
+            this.visible = true;
+        },
+        close() {
+            adduserModal.visible = false;
+            adduserModal.closeLoading();
+        },
+        loading() {
+            adduserModal.confirmLoading = true;
+        },
+        closeLoading() {
+            adduserModal.confirmLoading = false;
+        }
+    };
+
+    new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#adduser-modal',
+        data: {
+            adduserModal: adduserModal
+        },
+        methods: {}
+    });
+
+</script>

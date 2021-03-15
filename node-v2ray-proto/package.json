@@ -1,0 +1,41 @@
+{
+  "name": "@shynome/v2ray-proto",
+  "version": "4.18.2",
+  "description": "",
+  "main": "core_pb.js",
+  "types": "core_pb.d.ts",
+  "scripts": {
+    "test": "jest",
+    "preversion": "npm t",
+    "postversion": "git push --follow-tags",
+    "prepack": "npm run gen:pb",
+    "pregen:pb": "rm -f core_pb.js core_pb.d.ts",
+    "gen:pb": "pbjs -t static-module -w commonjs $(node -pe \"require('glob').sync('v2ray.com/core/**/*.proto').join(' ')\") | tee core_pb.js | pbts -o core_pb.d.ts -"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shynome/node-v2ray-proto.git"
+  },
+  "keywords": [
+    "v2ray",
+    "proto"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shynome/node-v2ray-proto/issues"
+  },
+  "homepage": "https://github.com/shynome/node-v2ray-proto#readme",
+  "devDependencies": {
+    "@grpc/grpc-js": "^0.6.15",
+    "@types/jest": "^24.0.25",
+    "@types/node": "^13.1.2",
+    "@types/uuid": "^3.4.6",
+    "glob": "^7.1.6",
+    "ipaddr.js": "^1.9.1",
+    "jest": "^24.9.0",
+    "protobufjs": "^6.8.8",
+    "ts-protoc-gen": "^0.12.0",
+    "typescript": "^3.7.4"
+  }
+}

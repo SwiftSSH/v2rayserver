@@ -1,0 +1,23 @@
+<a-menu theme="<%= theme %>" mode="inline" :selected-keys="['<%= requestPath %>']"
+@click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key">
+    <a-menu-item key="/">
+        <a-icon type="dashboard"></a-icon>
+        <span>system status</span>
+    </a-menu-item>
+    <a-menu-item key="/accounts">
+        <a-icon type="user"></a-icon>
+        <span>accounts</span>
+    </a-menu-item>
+    <a-menu-item key="/setting" class="active">
+        <a-icon type="setting"></a-icon>
+        <span>panel settings</span>
+    </a-menu-item>
+    <a-menu-item key="/clients">
+        <a-icon type="laptop"></a-icon>
+        <span>clients</span>
+    </a-menu-item>
+    <a-menu-item key="/logout">
+        <a-icon type="logout"></a-icon>
+        <span>logout</span>
+    </a-menu-item>
+</a-menu>

@@ -1,0 +1,552 @@
+<% extend('layout') %>
+
+    <style>
+        .ant-card {
+            margin-bottom: 20px;
+        }
+
+        div[class*=ant-col] {
+            margin-top: 10px;
+        }
+    </style>
+
+    <a-layout id="app" v-cloak>
+        <%- include('sidebar') -%>
+        <a-layout id="content-layout">
+            <a-layout-content class="ant-layout-content-pages">
+                <a-spin :spinning="spinning" :delay="500" tip="loading">
+                    <transition name="list" appear>
+                        <a-tag v-if="JSON.parse('<%= isDefaultUser %>')" color="red" style="margin-bottom: 10px">
+                            Please go to the panel settings as soon as possible to modify the username and password, otherwise there may be a risk of leaking account information
+                        </a-tag>
+                    </transition>
+                    <transition name="list" appear>
+                        <a-card hoverable style="margin-bottom: 20px;">
+                            <div slot="title">
+                                <a-button type="primary" icon="plus" @click="openAddInbound"></a-button>
+                            </div>
+                            <a-row>
+                                <a-input v-model="searchKey" placeholder="search" autofocus></a-input>
+                            </a-row>
+                            <a-row>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    upload / download：
+                                    <a-tag color="green">[[ sizeFormat(total.up) ]] / [[ sizeFormat(total.down) ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    total traffic：
+                                    <a-popconfirm title="Are you sure you want to reset all traffic to 0? It\'s unrecoverable"
+                                                  @confirm="resetAllTraffic()"
+                                                  ok-text="confirm" cancel-text="cancel">
+                                        <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
+                                    </a-popconfirm>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    number of inbounds：
+                                    <a-tag color="green">[[ inbounds.length ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    number of users：
+                                    <a-tag color="green">[[ users.length ]]</a-tag>
+                                </a-col>
+                            </a-row>
+                        </a-card>
+                    </transition>
+                    <a-card v-if="data.length === 0">
+                        No account, please add an account first
+                    </a-card>
+                    <transition-group tag="div" name="list">
+                        <a-card v-for="item in searchedData" :key="item.id" hoverable>
+                            <div slot="title">
+                                <a-tag class="hidden-sm-and-down" color="green">[[ item.isProxy ? "inbound": "user"]]@[[ item.protocol ]]</a-tag>
+                                <a-button v-if="Protocols.SHADOWSOCKS === item.protocol || !item.isProxy && [Protocols.VMESS, Protocols.VLESS, Protocols.SHADOWSOCKS, Protocols.TROJAN].indexOf(item.protocol) >= 0"
+                                          type="primary" icon="qrcode"
+                                          @click="qrModal.show(
+                                                    'qrcode',
+                                                    item.genLink(item.listen === '0.0.0.0' ? ip : item.listen),
+                                                    'copy link')"></a-button>
+                                <a-button v-if="Protocols.SHADOWSOCKS !== item.protocol && item.isProxy" icon="user-add" @click="openAddUser(item)"></a-button>
+                                <a-button icon="edit" @click="item.isProxy ? openEditInbound(item) : openAddUser(item, true)"></a-button>
+                                <a-button style="float: right;" type="danger" icon="delete" @click="delInbound(item)"></a-button>
+                            </div>
+                            <div>
+                                <a-row>
+                                    <a-col class="hidden-md-and-up" :xs="24" :sm="24" :lg="12">
+                                        protocol：
+                                        <a-tag color="green">[[ item.protocol ]]</a-tag>
+                                    </a-col>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        remark：
+                                        <a-tag color="blue">[[ empDefault(item.remark, 'none') ]]</a-tag>
+                                    </a-col>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        enable：
+                                        <a-popconfirm :title="item.enable ? 'Whether to disable' : 'Whether to enable'"
+                                                      @confirm="setEnable(item, !item.enable)"
+                                                      ok-text="yes" cancel-text="no">
+                                            <a-tag v-if="item.enable" color="green">yes</a-tag>
+                                            <a-tag v-else color="red">no</a-tag>
+                                        </a-popconfirm>
+                                    </a-col>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        upload / download：
+                                        <a-tag color="green">[[ sizeFormat(item.up) ]] / [[ sizeFormat(item.down) ]]</a-tag>
+                                    </a-col>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        total traffic：
+                                        <a-popconfirm title="Are you sure you want to reset all traffic to 0? It's unrecoverable"
+                                                      @confirm="resetTraffic(item)"
+                                                      ok-text="confirm" cancel-text="cancel">
+                                            <a-tag color="green">[[ sizeFormat(item.up + item.down) ]]</a-tag>
+                                        </a-popconfirm>
+                                    </a-col>
+                                    <template v-if="item.isProxy">
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            IP：
+                                            <a-tag color="green">[[ item.listen === '0.0.0.0' ? ip : item.listen ]]</a-tag>
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            port：
+                                            <a-tag color="green">[[ item.port ]]</a-tag>
+                                        </a-col>
+                                    </template>
+                                    <!-- vmess or vless -->
+                                    <template v-if="item.protocol === Protocols.VMESS || item.protocol === Protocols.VLESS">
+                                        <template v-if="!item.isProxy && item.protocol === Protocols.VMESS">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                id：
+                                                <a-tag color="green">[[ item.settings.vmesses[0].id ]]</a-tag>
+                                            </a-col>
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                alter id：
+                                                <a-tag color="green">[[ item.settings.vmesses[0].alterId ]]</a-tag>
+                                            </a-col>
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                method：
+                                                <a-tag v-if="item.settings.disableInsecure" color="green">
+                                                    [[ VmessMethods.AES_128_GCM ]]、[[ VmessMethods.CHACHA20_POLY1305 ]]
+                                                </a-tag>
+                                                <a-tag v-else color="green">auto</a-tag>
+                                            </a-col>
+                                        </template>
+                                        <template v-if="!item.isProxy && item.protocol === Protocols.VLESS">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                id：
+                                                <a-tag color="green">[[ item.settings.vlesses[0].id ]]</a-tag>
+                                            </a-col>
+                                        </template>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            transport：
+                                            <a-tag color="green">[[ item.stream.network ]]</a-tag>
+                                        </a-col>
+                                        <!-- vmess tcp -->
+                                        <template v-if="item.stream.network === 'tcp'">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                camouflage：
+                                                <a-tag color="green">[[ item.stream.tcp.type ]]</a-tag>
+                                            </a-col>
+                                            <template v-if="item.stream.tcp.type === 'http'">
+                                                <a-col :xs="24" :sm="24" :lg="12">
+                                                    path：
+                                                    <a-tag color="green">[[ item.stream.tcp.request.path[0] ]]</a-tag>
+                                                </a-col>
+                                            </template>
+                                        </template>
+                                        <!-- vmess kcp -->
+                                        <template v-if="item.stream.network === 'kcp'">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                camouflage：
+                                                <a-tag color="green">[[ item.stream.kcp.type ]]</a-tag>
+                                            </a-col>
+                                        </template>
+                                        <!-- vmess ws -->
+                                        <template v-if="item.stream.network === 'ws'">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                path：
+                                                <a-tag color="green">[[ item.stream.ws.path ]]</a-tag>
+                                            </a-col>
+                                        </template>
+                                        <!-- vmess http -->
+                                        <template v-if="item.stream.network === 'http'">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                path：
+                                                <a-tag color="green">[[ item.stream.http.path ]]</a-tag>
+                                            </a-col>
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                host：
+                                                <a-tag color="green">[[ empDefault(item.stream.http.host[0], 'none') ]]</a-tag>
+                                            </a-col>
+                                        </template>
+                                        <!-- vmess quic -->
+                                        <template v-if="item.stream.network === 'quic'">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                QUIC method：
+                                                <a-tag color="green">[[ item.stream.quic.security ]]</a-tag>
+                                            </a-col>
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                password：
+                                                <a-tag color="green">[[ empDefault(item.stream.quic.key, 'none') ]]</a-tag>
+                                            </a-col>
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                camouflage：
+                                                <a-tag color="green">[[ item.stream.quic.type ]]</a-tag>
+                                            </a-col>
+                                        </template>
+                                        <!-- tls enable -->
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            tls：
+                                            <a-tag v-if="item.stream.security == 'tls'" color="green">open</a-tag>
+                                            <a-tag v-else color="orange">close</a-tag>
+                                        </a-col>
+                                        <!-- tls -->
+                                        <template v-if="item.stream.security == 'tls'">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                domain：
+                                                <a-tag color="green">[[ empDefault(item.stream.tls.server, 'none') ]]</a-tag>
+                                            </a-col>
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                allow insecure：
+                                                <a-tag v-if="item.stream.tls.allowInsecure" color="green">yes</a-tag>
+                                                <a-tag v-else color="green">no</a-tag>
+                                            </a-col>
+                                        </template>
+                                    </template>
+                                    <!-- trojan -->
+                                    <template v-if="!item.isProxy && item.protocol === Protocols.TROJAN">
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            password：
+                                            <a-tag color="green">[[ item.settings.clients[0].password ]]</a-tag>
+                                        </a-col>
+                                    </template>
+                                    <!-- shadowsocks -->
+                                    <template v-if="item.protocol === Protocols.SHADOWSOCKS">
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            method：
+                                            <a-tag color="green">[[ item.settings.method ]]</a-tag>
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            password：
+                                            <a-tag color="green">[[ item.settings.password ]]</a-tag>
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            network：
+                                            <a-tag color="green">[[ item.settings.network ]]</a-tag>
+                                        </a-col>
+                                    </template>
+                                    <!-- dokodemo-door -->
+                                    <template v-if="item.protocol === Protocols.DOKODEMO">
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            forward address：
+                                            <a-tag color="green">[[ item.settings.address ]]</a-tag>
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            forward port：
+                                            <a-tag color="green">[[ item.settings.port ]]</a-tag>
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            network：
+                                            <a-tag color="green">[[ item.settings.network ]]</a-tag>
+                                        </a-col>
+                                    </template>
+                                    <!-- socks -->
+                                    <template v-if="!item.isProxy && item.protocol === Protocols.SOCKS">
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            password auth：
+                                            <a-tag v-if="item.settings.auth === 'password'" color="green">yes</a-tag>
+                                            <a-tag v-else color="orange">no</a-tag>
+                                        </a-col>
+                                        <template v-if="item.settings.auth === 'password'">
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                username：
+                                                <a-tag color="green">[[ item.settings.accounts[0].user ]]</a-tag>
+                                            </a-col>
+                                            <a-col :xs="24" :sm="24" :lg="12">
+                                                password：
+                                                <a-tag color="green">[[ item.settings.accounts[0].pass ]]</a-tag>
+                                            </a-col>
+                                        </template>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            udp：
+                                            <a-tag v-if="item.settings.udp" color="green">open</a-tag>
+                                            <a-tag v-else color="orange">close</a-tag>
+                                        </a-col>
+                                    </template>
+                                    <!-- http -->
+                                    <template v-if="!item.isProxy && item.protocol === Protocols.HTTP">
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            username：
+                                            <a-tag color="green">[[ item.settings.accounts[0].user ]]</a-tag>
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            password：
+                                            <a-tag color="green">[[ item.settings.accounts[0].pass ]]</a-tag>
+                                        </a-col>
+                                    </template>
+                                    <template v-if="item.isProxy">
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            users： 
+                                        <a-tag color="green">
+                                            <span>[[ countUsers(item.id) ]]/[[ item.maximum_users ]]</span>
+                                        </a-tag>
+                                        </a-col>
+                                    </template>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        expires：
+                                        <a-tag color="green">[[ getTimestamp(item.timestamp) ]]</a-tag>
+                                    </a-col>
+                                </a-row>
+                            </div>
+                        </a-card>
+                    </transition-group>
+                </a-spin>
+            </a-layout-content>
+        </a-layout>
+    </a-layout>
+    <script>
+        let app = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#app',
+            data: {
+                ip: location.hostname,
+                spinning: false,
+                inbounds: [],
+                users: [],
+                data: [],
+                searchedData: [],
+                searchKey: '',
+            },
+            methods: {
+                loading(spinning=true) {
+                    this.spinning = spinning;
+                },
+                empDefault(o, defaultValue='') {return isEmpty(o) ? defaultValue : o},
+                countUsers(inboundId){
+                    let users = this.users.filter((user) => user.inboundId === inboundId);
+                    return users.length;
+                },
+                getTimestamp(timestamp) {
+                    return moment(timestamp).fromNow()
+                },
+                getInbounds() {
+                    this.loading();
+                    return new Promise((resolve) => {
+                        get({
+                            url: '/v2ray/inbounds',
+                            success: data => {
+                                resolve(data);
+                                this.loading(false);
+                            },
+                            error: () => this.loading(false)
+                        });
+                    });
+                },
+                getUsers() {
+                    this.loading();
+                    return new Promise((resolve) => {
+                        get({
+                            url: '/v2ray/users',
+                            success: data => {
+                                resolve(data);
+                                this.loading(false);
+                            },
+                            error: () => this.loading(false)
+                        });
+                    });
+                },
+                setData(inbounds, users) {
+                    this.inbounds = this.setUpInbounds(inbounds);
+                    this.users = this.setUpUsers(users);
+                    this.data = this.inbounds.concat(this.users);
+                    this.searchInbounds();
+                },
+                setUpUsers(users) {
+                    return users.map((user) => {
+                        user.settings = {
+                            clients: [user],
+                            accounts: [user]
+                        };
+                        user.isProxy = false;
+                        let inb = Inbound.fromJson(user);
+                        inb.id = user.id;
+                        inb.up = user.up;
+                        inb.inboundId = user.inboundId;
+                        inb.down = user.down;
+                        inb.timestamp = user.timestamp;
+                        inb.expires = user.expires;
+                        return inb;
+                    }).reverse();
+                },
+                setUpInbounds(inbounds) {
+                    return inbounds.map(inbound => {
+                        console.log(inbound)
+                        inbound.streamSettings = inbound.streamSettings;
+                        let inb = Inbound.fromJson(inbound);
+                        inb.id = inbound.id;
+                        inb.up = inbound.up;
+                        inb.down = inbound.down;
+                        inb.isProxy = true;
+                        inb.timestamp = inbound.timestamp;
+                        inb.expires = inbound.expires;
+                        inb.maximum_users = inbound.maximum_users;
+                        return inb;
+                    }).reverse();
+                },
+                searchInbounds(key) {
+                    if (isEmpty(key)) {
+                        this.searchedData = this.data.slice();
+                    } else {
+                        this.searchedData.splice(0, this.searchedData.length);
+                        this.data.forEach(item => {
+                            let regex = new RegExp(`${key}`, "gi");
+                            const found = item.remark.match(regex) || item.id.match(regex);
+                            if (found) {
+                                this.searchedData.push(item);
+                            }
+                        });
+                    }
+                },
+                openAddInbound() {
+                    inModal.show({
+                        title: 'add account',
+                        okText: 'add',
+                        confirm: () => {
+                            inModal.loading();
+                            this.addInbound(inModal.inbound, () => inModal.closeLoading());
+                        }
+                    });
+                },
+                openEditInbound(inbound) {
+                    inModal.show({
+                        title: 'update account',
+                        okText: 'update',
+                        inbound: inbound,
+                        confirm: () => {
+                            inModal.loading();
+                            inModal.inbound.id = inbound.id;
+                            this.updateInbound(inModal.inbound, () => inModal.closeLoading());
+                        }
+                    });
+                },
+                openAddUser(inbound, update) {
+                    adduserModal.show({
+                        title: update ? 'update user' : 'add user',
+                        okText: update ? 'save' : 'add',
+                        inbound: update ? inbound : null,
+                        protocol: inbound.protocol,
+                        confirm: () => {
+                            adduserModal.loading();
+                            let { remark, expires, email } = adduserModal.inbound;
+                            let data = { remark, expires, email};
+                            if(Protocols.VMESS === inbound.protocol) {
+                                data.id = adduserModal.inbound.settings.vmesses[0].id;
+                                data.alterId = adduserModal.inbound.settings.vmesses[0].alterId;
+                            } if(Protocols.VLESS === inbound.protocol) {
+                                data.id = adduserModal.inbound.settings.vlesses[0].id;
+                            }  else if(Protocols.HTTP === inbound.protocol || Protocols.SOCKS === inbound.protocol) {
+                                data.user = adduserModal.inbound.settings.accounts[0].user;
+                                data.pass = adduserModal.inbound.settings.accounts[0].pass;
+                            } else if(Protocols.TROJAN === inbound.protocol) {
+                                data.password = adduserModal.inbound.settings.clients[0].password;
+                            }
+                            this.submit('/v2ray/inbound/' + (update ? 'update': 'add') + '/user/' + inbound.id, data, adduserModal, () => adduserModal.closeLoading(), () => adduserModal.closeLoading());
+                        },
+                    });
+                },
+                addInbound(inbound, callback) {
+                    let data = {
+                        port: inbound.port,
+                        listen: inbound.listen,
+                        expires: inbound.expires,
+                        maximum_users: inbound.maximum_users,
+                        protocol: inbound.protocol,
+                        settings: inbound.settings.toString(false),
+                        streamSettings: inbound.stream.toString(false),
+                        sniffing: [Protocols.VMESS, Protocols.SHADOWSOCKS].indexOf(inbound.protocol) >= 0 ?
+                            inbound.sniffing.toString(false) : '{}',
+                        remark: inbound.remark,
+                    };
+                    this.submit('/v2ray/inbound/add', data, inModal, callback, callback);
+                },
+                updateInbound(inbound, callback) {
+                    let data = {
+                        port: inbound.port,
+                        listen: inbound.listen,
+                        protocol: inbound.protocol,
+                        expires: inbound.expires,
+                        settings: inbound.settings.toString(false),
+                        streamSettings: inbound.stream.toString(false),
+                        sniffing: [Protocols.VMESS, Protocols.SHADOWSOCKS].indexOf(inbound.protocol) >= 0 ?
+                            inbound.sniffing.toString(false) : '{}',
+                        remark: inbound.remark,
+                        enable: inbound.enable,
+                    };
+                    this.submit('/v2ray/inbound/update/' + inbound.id, data, inModal, callback, callback);
+                },
+                delInbound(inbound) {
+                    this.$confirm({
+                        title: 'delete account',
+                        content: 'Cannot be restored after deletion, confirm deletion?',
+                        okText: 'delete',
+                        cancelText: 'cancel',
+                        onOk: () => this.submit('/v2ray/inbound' + (inbound.isProxy ? '/del': '/del/user') +'/' + inbound.id)
+                    });
+                },
+                resetTraffic(inbound) {
+                    this.submit('/v2ray/reset_traffic/' + inbound.id);
+                },
+                resetAllTraffic() {
+                    this.submit('/v2ray/reset_all_traffic');
+                },
+                setEnable(inbound, enable) {
+                    let data = {enable: enable};
+                    this.submit('/v2ray/inbound/update/' + inbound.id, data);
+                },
+                submit(url, data, modal, success, error) {
+                    post({
+                        url: url,
+                        data: data,
+                        success: data => {
+                            if (data.success) {
+                                Promise.all([this.getInbounds(), this.getUsers()])
+                                .then(([inbounds, users]) => {
+                                    this.setData(inbounds, users);
+                                    if (modal) {
+                                        modal.close();
+                                    }
+                                });
+                            }
+                            execute(success, data);
+                        },
+                        error: error,
+                    });
+                },
+            },
+            watch: {
+                searchKey(value) {
+                    this.searchInbounds(value);
+                }
+            },
+            mounted() {
+                this.setData(JSON.parse('<%- inbounds %>'), JSON.parse('<%- users %>'));
+            },
+            computed: {
+                total() {
+                    let down = 0, up = 0;
+                    for (let i = 0; i < this.inbounds.length; ++i) {
+                        down += this.inbounds[i].down;
+                        up += this.inbounds[i].up;
+                    }
+                    return {
+                        down: down,
+                        up: up,
+                    };
+                }
+            },
+        });
+
+    </script>
+    <%- include('inbound_modal') -%>
+    <%- include('text_modal') -%>
+    <%- include('qrcode_modal') -%>
+    <%- include('prompt_modal') -%>
+    <%- include('adduser_model') -%>

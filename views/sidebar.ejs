@@ -1,0 +1,35 @@
+<a-layout-sider id="sider" collapsible breakpoint="md" collapsed-width="0">
+    <%- include('menu', { theme: "dark" }) -%>
+</a-layout-sider>
+<a-drawer id="sider-drawer" placement="left" :closable="false"
+          @close="siderDrawer.close()"
+          :visible="siderDrawer.visible" :wrap-style="{ padding: 0 }">
+    <div class="drawer-handle" @click="siderDrawer.change()" slot="handle">
+        <a-icon :type="siderDrawer.visible ? 'close' : 'menu-fold'"></a-icon>
+    </div>
+    <%- include('menu', { theme: "light" }) -%>
+</a-drawer>
+
+<script>
+
+    const siderDrawer = {
+        visible: false,
+        show() {
+            this.visible = true;
+        },
+        close() {
+            this.visible = false;
+        },
+        change() {
+            this.visible = !this.visible;
+        }
+    };
+
+    let siderDrawerApp = new Vue({
+        el: '#sider-drawer',
+        data: {
+            siderDrawer
+        }
+    });
+    
+</script>
