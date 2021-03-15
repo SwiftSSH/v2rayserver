@@ -4,7 +4,6 @@ let fs = require('fs');
 let request = require('request');
 let progress = require('request-progress');
 const moment = require('moment');
-const { spawn } = require("child_process");
 const extend = require("xtend");
 
 module.exports = {

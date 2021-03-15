@@ -1,6 +1,8 @@
 module.exports = {
   "log": {
-    "loglevel": "warning"
+    "loglevel": "warning",
+    "access": "./log/access.log",
+    "error": "./log/error.log",
   },
   "policy": {
 		"levels": {
