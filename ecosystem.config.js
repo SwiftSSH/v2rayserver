@@ -2,8 +2,17 @@ module.exports = {
   "apps" : [{
     "name"      : "V2RAY SERVER",
     "script"    : "app.js",
+    "env_development": {
+      "PORT": 5000,
+      "NODE_ENV": "development",
+      "DOMAIN": "koodeyo.com",
+    },
     "env_production" : {
-      "NODE_ENV": "production"
+      "PORT": 65433,
+      "NODE_ENV": "production",
+      "DOMAIN": "ind.koodeyo.com",
+      "SSL_CERT": "/etc/letsencrypt/live/ind.koodeyo.com/fullchain.pem",
+      "SSL_KEY": "/etc/letsencrypt/live/ind.koodeyo.com/privkey.pem"
     }
   }],
   "deploy" : {
@@ -14,7 +23,6 @@ module.exports = {
       "ref"  : "origin/test",
       "repo" : "git@github.com:SwiftSSH/v2rayserver.git",
       "path" : "/home/paul/v2rayserver",
-      // "pre-setup" : "pip3 install -r requirements.txt",
       "post-deploy" : "pip3 install -r requirements.txt && npm install && npm run pm2-restart",
       "env"  : {
         "NODE_ENV": "production"

@@ -48,20 +48,7 @@ module.exports = {
       "port": "10086", 
       "protocol": "vmess",
       "settings": {
-        "clients": [
-          {
-            "email": "auser",
-            "id": "e731f153-4f31-49d3-9e8f-ff8f396135ef",
-            "level": 0,
-            "alterId": 64
-          },
-          {
-            "email": "buser",
-            "id": "e731f153-4f31-49d3-9e8f-ff8f396135ee",
-            "level": 0,
-            "alterId": 64
-          }
-        ]
+        "clients": []
       },
       "tag": "users_account",
       "detour": { 
@@ -70,7 +57,7 @@ module.exports = {
     },
     {
       "protocol": "vmess",
-      "port": "10000-20000",
+      "port": "20000-30000",
       "tag": "dynamicPort",  
       "settings": {
         "default": {

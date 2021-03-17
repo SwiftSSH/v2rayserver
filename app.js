@@ -24,6 +24,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(Express.static(path.join(__dirname, 'static')));
 app.use('/', require('./routes/index'));
+app.use('/api', require('./routes/api'));
 app.use('/server', require('./routes/server'));
 app.use('/v2ray', require('./routes/v2ray'));
 
@@ -32,7 +33,6 @@ app.use(function(err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
   // render the error page
-  res.status(err.status || 500);
   res.render('error');
 });
 

@@ -113,25 +113,25 @@
                             </a-tooltip>
                         </a-card>
                     </a-col>
-                    <template v-if="status.loadbalancerinfo">
+                    <template v-if="loadbalancerinfo">
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            total requests: [[ status.loadbalancerinfo.total ]]
+                            total requests: [[ loadbalancerinfo.total ]]
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            active connections: [[ status.loadbalancerinfo.activeConnections ]]
+                            active connections: [[ loadbalancerinfo.activeConnections ]]
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            reading / writing: [[ status.loadbalancerinfo.reading ]] / [[ status.loadbalancerinfo.writing ]]
+                            reading / writing / waiting: [[ loadbalancerinfo.reading ]] / [[ loadbalancerinfo.writing ]] / [[ loadbalancerinfo.waiting ]]
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            handled / accepted: [[ status.loadbalancerinfo.handled ]] / [[ status.loadbalancerinfo.accepted ]]
+                            handled / accepted: [[ loadbalancerinfo.handled ]] / [[ loadbalancerinfo.accepted ]]
                         </a-card>
                     </a-col>
                     </template>
@@ -238,11 +238,20 @@
             versionModal,
             spinning: false,
             loadingTip: 'loading',
+            loadbalancerinfo: { "activeConnections": 0, "accepted": 0,"handled": 0,"total": 0,"reading":0,"writing": 0,"waiting": 0}
         },
         methods: {
             loading(spinning, tip = 'loading') {
                 this.spinning = spinning;
                 this.loadingTip = tip;
+            },
+            getLoadbalancerinfo() {
+                get({
+                    url: '/server/loadbalancerinfo',
+                    success: data => {
+                        this.loadbalancerinfo = data;
+                    }
+                });
             },
             getStatus() {
                 get({
@@ -331,6 +340,7 @@
         mounted() {
             this.setStatus(JSON.parse('<%- status %>'));
             setInterval(this.getStatus, 2000);
+            setInterval(this.getLoadbalancerinfo, 2000);
         },
     });
 

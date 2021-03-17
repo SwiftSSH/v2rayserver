@@ -71,6 +71,10 @@
                             </div>
                             <div>
                                 <a-row>
+                                    <a-col v-if="item.isProxy" :xs="24" :sm="24" :lg="12">
+                                        id：
+                                        <a-tag color="green">[[ item.id ]]</a-tag>
+                                    </a-col>
                                     <a-col class="hidden-md-and-up" :xs="24" :sm="24" :lg="12">
                                         protocol：
                                         <a-tag color="green">[[ item.protocol ]]</a-tag>
@@ -378,7 +382,6 @@
                 },
                 setUpInbounds(inbounds) {
                     return inbounds.map(inbound => {
-                        console.log(inbound)
                         inbound.streamSettings = inbound.streamSettings;
                         let inb = Inbound.fromJson(inbound);
                         inb.id = inbound.id;

@@ -1,0 +1,239 @@
+<% extend('layout') %>
+<style>
+    .ant-card {
+        margin-bottom: 20px;
+    }
+
+    div[class*=ant-col] {
+        margin-top: 10px;
+    }
+    .ant-layout-content-pages {
+        height: 100%;
+    }
+</style>
+
+    <a-layout id="app" v-cloak>
+        <% if (admin) { %>
+            <%- include('sidebar') -%>
+        <% } else { %> 
+            <a-layout id="components-layout-demo-fixed">
+                <a-layout-header :style="{ position: 'fixed', zIndex: 1, width: '100%'}">
+                  <a-menu
+                    theme="dark"
+                    mode="horizontal"
+                    :default-selected-keys="['#']"
+                    :style="{ lineHeight: '64px' }"
+                    @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key"
+                  >
+                    <a-menu-item key="/">
+                      Dashboard
+                    </a-menu-item>
+                    <a-menu-item style="float: right;" key="/logout">
+                      <a-icon type="logout"></a-icon>
+                      <span>logout</span>
+                    </a-menu-item>
+                  </a-menu>
+                </a-layout-header>
+              </a-layout>
+            <style>
+                #components-layout-demo-fixed .logo {
+                  width: 120px;
+                  height: 31px;
+                  background: rgba(255, 255, 255, 0.2);
+                  margin: 16px 24px 16px 0;
+                  float: left;
+                }
+                .mb-50px {
+                    margin-top: 50px;
+                }
+            </style>
+        <% } %>
+        <a-layout id="content-layout" style="width: 100%; margin-top: 50px;">
+            <a-layout-content class="ant-layout-content-pages">
+                <a-spin :spinning="spinning" :delay="500" tip="loading">
+                <transition name="list" appear>
+                    <a-card hoverable style="margin-bottom: 20px;">
+                        <div slot="title">
+                            <a-button type="primary" icon="plus" @click="openUser()"></a-button>
+                        </div>
+                        <a-row>
+                            <a-input v-model="searchKey" placeholder="search" autofocus></a-input>
+                        </a-row>
+                        <br />
+                        <a-row>
+                            <% if (admin) { %>
+                                number of agents：
+                                <a-tag color="green">[[ users.length ]]</a-tag>
+                            <% } else { %> 
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    accounts： <a-tag color="blue">[[ users.length ]]/[[ me.inbound.maximum_users ]]</a-tag>
+                                </a-col>
+                            <% } %>
+                            </a-col>
+                        </a-row>
+                    </a-card>
+                </transition>
+                <a-card v-if="users.length === 0">
+                    No users yet
+                </a-card>
+                <transition-group tag="div" name="list">
+                    <a-card v-for="user in searchedData" :key="user.id" hoverable>
+                        <div slot="title">
+                            <a-tag class="hidden-sm-and-down" color="green">default</a-tag>
+                            <a-button type="primary" icon="qrcode" v-if="!user.agent" @click="qrModal.show(
+                                'qrcode',
+                                genLink(user),
+                                'copy link')"></a-button>
+                            <a-button icon="edit" @click="openUser(user)"></a-button>
+                            <a-popconfirm title="Are you sure you want?"
+                            @confirm="deleteUser(user.id)"
+                            ok-text="yes" cancel-text="no">
+                                <a-button type="danger" icon="delete"></a-button>
+                            </a-popconfirm>
+                        </div>
+                        <div>
+                            <a-row>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    id： 
+                                    <a-tag color="green">[[ user.id ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    remark： [[ user.remark ]]
+                                </a-col>
+                            </a-row>
+                            <a-row>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    username： [[ user.username ]]
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    email： [[ user.email ]]
+                                </a-col>
+                                <% if (!admin) { %>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        expires： <a-tag color="green">[[ getTimestamp(user.timestamp) ]]</a-tag>
+                                    </a-col>
+                                <% } %> 
+                            </a-row>
+                        </div>
+                    </a-card>
+                </transition-group>
+                </a-spin>
+            </a-layout-content>
+        </a-layout>
+    </a-layout>
+
+    <script>
+
+        let app = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#app',
+            data: {
+                spinning: false,
+                users: [],
+                searchedData: [],
+                me: {
+                    inbound: {}
+                },
+                searchKey: '',
+            },
+            methods: {
+                genLink(user){
+                    console.log(user)
+                    if(this.me.inbound) {
+                        let copy = { ...this.me.inbound };
+                        copy.settings.clients.push(user);
+                        let inbound = Inbound.fromJson(copy);
+                        copy.settings.clients = [];
+                        return inbound.genLink(location.hostname);
+                    }
+                    return "no data"
+                },
+                getTimestamp(timestamp) {
+                    return moment(timestamp).fromNow()
+                },
+                loading(spinning=true) {
+                    this.spinning = spinning;
+                },
+                getMe() {
+                    get({
+                        url: '/api/me',
+                        success: data => {
+                            this.me = data;
+                        }
+                    });
+                },
+                getUsers() {
+                    this.loading();
+                    get({
+                        url: '/api/me/users',
+                        success: data => {
+                            this.users = data;
+                            this.searchInbounds();
+                            this.loading(false);
+                        },
+                        error: () => this.loading(false)
+                    });
+                },
+                deleteUser(userId) {
+                    this.submit('/v2ray/inbound' + '/del/user/' + userId)
+                },
+                openUser(user = {}) {
+                    userModal.show({
+                        title: user.id ? 'update user' : 'add user',
+                        okText: user.id ? 'save' : 'add',
+                        user,
+                        confirm: () => {
+                            userModal.loading();
+                            this.submit('/v2ray/inbound/' + (user.id ? 'update': 'add') + '/user/' + user.id, userModal.user, userModal, () => userModal.closeLoading(), () => userModal.closeLoading());
+                        }
+                    });
+                },
+                submit(url, data, modal, success, error) {
+                    post({
+                        url: url,
+                        data: data,
+                        success: data => {
+                            if (data.success) {
+                                if (modal) {
+                                    modal.close();
+                                }
+                                this.getUsers();
+                            }
+                            execute(success, data);
+                        },
+                        error: error,
+                    });
+                },
+                searchInbounds(key) {
+                    if (isEmpty(key)) {
+                        this.searchedData = this.users.slice();
+                    } else {
+                        this.searchedData.splice(0, this.searchedData.length);
+                        this.users.forEach(item => {
+                            let regex = new RegExp(`${key}`, "gi");
+                            try { 
+                                const found = item.remark.match(regex) || item.id.match(regex) || item.username.match(regex) || item.email.match(regex);
+                                if (found) {
+                                    this.searchedData.push(item);
+                                }
+                            } catch (e) {}
+                        });
+                    }
+                },
+            },
+            watch: {
+                searchKey(value) {
+                    this.searchInbounds(value);
+                }
+            },
+            mounted() {
+                if(!JSON.parse('<%- admin %>')) {
+                    this.getMe();
+                }
+                this.getUsers()
+            },
+        });
+
+    </script>
+<%- include('qrcode_modal') -%>
+<%- include('user_model') -%>

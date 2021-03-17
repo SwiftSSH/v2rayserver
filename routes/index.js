@@ -1,33 +1,50 @@
 const express = require('express');
 const router = express.Router();
-const { store, data } = require('../context');
+const context = require('../context');
 const utils = require("../utils");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { SECRET_KEY } = require('../constants');
-const extend = require('xtend');
 
 router.post('/login', async function(req, res) {
   let { username, password } = req.body;
-  let admin = store.getAdmin(username);
+  let admin = context.store.getAdmin(username);
+  let user = context.store.getUser(username);
   let success = false;
+  let data = { admin: false, isDefaultUser: false };
 
-  let setToken = function (username, isDefaultUser) {
-    const token = jwt.sign({ username, isDefaultUser }, SECRET_KEY, {
+  let setToken = function () {
+    const token = jwt.sign(data, SECRET_KEY, {
       expiresIn: '1h'
     });
     res.cookie('v2-access', token, { httpOnly: true });
   };
 
   if(admin) {
-    const isMatch = await bcrypt.compare(password, admin.password);
+    const isMatch = await bcrypt.compare(password.toString(), admin.password);
     if (isMatch) {
       success = true;
-      setToken(username, false);
+      data.username = username;
+      data.admin = true
     }
-  } else if(username === 'admin' && password === 'admin') {
+  } 
+  
+  if((user && user.enable) && user.agent) {
+    const isMatch = await bcrypt.compare(password.toString(), user.password);
+    if (isMatch) {
+      success = true;
+      delete user.password;
+      data.user = user;
+    }
+  } else if(!admin && (username === 'admin' && password === 'admin')) {
     success = true;
-    setToken(null, true);
+    data.username = username;
+    data.isDefaultUser = true;
+    data.admin = true;
+  }
+
+  if(success) {
+    setToken();
   }
   
   res.json({ success, msg: success ? "Login success" : "username or password wrong" });
@@ -41,13 +58,18 @@ router.use(function(req, res, next) {
   }
 });
 
-router.get('/', async function(req, res) {
-  let info = extend(data.get("server_info"), {
-    loadbalancerinfo: await utils.loadbalancerinfo()
-  });
+function midleware(req, res, next) {
+  if(req.authenticated && !res.locals.admin) {
+    res.redirect("/dashboard");
+  } else {
+    next();
+  }
+}
+
+router.get('/', midleware, async function(req, res) {
   res.render('index', { 
     title: 'system status', 
-    status: JSON.stringify(info)
+    status: JSON.stringify(context.data.get("server_info"))
   });
 });
 
@@ -57,19 +79,23 @@ router.get('/logout', function(req, res) {
   res.redirect('/');
 });
 
-router.get('/clients', function(req, res) {
+router.get('/clients', midleware, function(req, res) {
   res.render('clients', { title: 'clients' });
 });
 
-router.get('/accounts', function(req, res) {
+router.get('/dashboard', function(req, res) {
+  res.render('users_dashboard', { title: 'Dashboard' });
+});
+
+router.get('/accounts', midleware, function(req, res) {
   res.render('accounts', { 
     title: 'accounts', 
-    inbounds: JSON.stringify(store.getInbounds()), 
+    inbounds: JSON.stringify(context.store.getInbounds()), 
     users: JSON.stringify(utils.getUsers()) 
   });
 });
 
-router.get('/setting', function(req, res, next) {
+router.get('/setting', midleware, function(req, res, next) {
   res.render('setting', { 
     title: 'panel settings', 
     nginx_config: utils.getNginxConfig(),

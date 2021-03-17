@@ -21,7 +21,16 @@ function V2RAY({ v2rayPath, configPath, host, port, APIAddr, APIPort, ProxyFlag 
     this.running = false;
     this.message = "Something went wrong";
     this.apiLoaded = false;
+    this.restarting = false;
     this.code = 1;
+    context.nodeEvent.on('restart', this.restart.bind(this));
+    context.nodeEvent.on('command', this.cmd.bind(this));
+};
+
+V2RAY.prototype.cmd = function (command) {
+    try { 
+        this[command]();
+    } catch (e) {}
 };
 
 V2RAY.prototype.getAPI = function () {
@@ -38,9 +47,14 @@ V2RAY.prototype.getAPI = function () {
 };
 
 V2RAY.prototype.restart = function() {
-    console.log("Restarting v2ray Service");
-    this.stop();
-    this.start();
+    if(!this.restarting) {
+        console.log("Restarting v2ray Service after 10 seconds");
+        this.restarting = true;
+        setTimeout(() => {
+            this.stop();
+            this.start();
+        }, 10 * 1000);
+    }
 };
 
 V2RAY.prototype.config = function () {
@@ -71,7 +85,8 @@ V2RAY.prototype.start = async function(freshStart) {
             context.instances.set('v2rayApi', this.getAPI());
             this.apiLoaded = true;
         }
-        console.log(this.log(`${data}`));
+        console.log(`${data}`);
+        // console.log(this.log(`${data}`));
     });
     
     this.v2rayProc.stderr.on('data', (data) => {
@@ -83,17 +98,18 @@ V2RAY.prototype.start = async function(freshStart) {
     this.v2rayProc.stdin.on('error', (e) => {
         console.log("error", e.message)
         this.message = e.message;
+        this.restarting = false
     });
 
     this.v2rayProc.on('close', (params) => {
         this.running = false;
+        this.restarting = false
     });
 
     this.v2rayProc.stdin.write(JSON.stringify(this.config()));
     this.v2rayProc.stdin.end();
     this.code = 0;
-    console.log("V2RAY service started");
-    
+    this.restarting = false
     context.instances.set('v2rayService', this);
     context.data.set('v2rayVersion', await this.version());
     // context.data.set('certificates', await this.getCert());
@@ -134,6 +150,7 @@ V2RAY.prototype.stop = function() {
     if(this.v2rayProc) {
         this.v2rayProc.kill();
         this.code = 1;
+        this.restarting = false;
         console.log("V2RAY service stopped");
     }
 };

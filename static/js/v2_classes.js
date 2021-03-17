@@ -534,7 +534,7 @@ class Inbound extends V2CommonClass {
                 streamSettings=new StreamSettings(),
                 tag='',
                 sniffing=new Sniffing(),
-                remark='',
+                remark='🌐 Safe Internet',
                 enable=true,
                 expires = '1 day',
                 maximum_users = 5,
@@ -617,13 +617,15 @@ class Inbound extends V2CommonClass {
             v: '2',
             ps: this.remark,
             add: address,
-            port: this.port,
             id: this.settings.vmesses[0].id,
             aid: this.settings.vmesses[0].alterId,
             net: network,
             type: type,
             host: host,
-            path: path,
+            //path: path, 
+            //port: this.port
+            port: this.stream.security !== 'none' ? 443 : this.port,
+            path: this.stream.security !== 'none' ? ("/ws/v1/" + this.port) : path,
             tls: this.stream.security,
         };
         return 'vmess://' + Inbound.base64(JSON.stringify(obj, null, 2));

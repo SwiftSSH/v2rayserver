@@ -37,10 +37,16 @@ module.exports = {
         });
     },
 
-    formatExpiryDate(timeStr) {
-        let [unit, string] = timeStr.split(" ");
+    formatExpiryDate(timeStr = 0) {
+        let unit, UnitString;
+        if(typeof timeStr == 'number') {
+            unit = timeStr;
+            UnitString = timeStr > 1 ? 'days' : 'day';
+        } else {
+            [unit, UnitString] = timeStr.split(" ");
+        }
         var timeout = moment();
-        timeout.add(unit, string);
+        timeout.add(unit, UnitString);
         return timeout.utc();
     },
 
@@ -48,6 +54,7 @@ module.exports = {
         const { store } = require('./context');
         return store.getUsers().map((user) => {
             let inbound = store.getInbound(user.inboundId);
+            if(!inbound) return user;
             return extend(inbound, {
                 id: user.id,
                 alterId: user.alterId,
@@ -58,7 +65,7 @@ module.exports = {
                 up: user.up,
                 down: user.down
             });
-        })
+        });
     },
 
     getSettings(hasNginx) {
@@ -92,8 +99,8 @@ module.exports = {
     },
 
     loadbalancerinfo() {
-        return new Promise(function (resolve) {
-            request("http://127.0.0.1/nginx_status", function (error, response, body) {
+        return new Promise(function (resolve, reject) {
+            request(`https://ind.koodeyo.com/nginx_status`, function (error, response, body) {
                 if(error) {
                     body = `Active connections: 0 
                     server accepts handled requests
@@ -112,7 +119,7 @@ module.exports = {
                     data.waiting = Number(lines[3].split(' ')[5].trim());
                     resolve(data);
                 } catch (error) {
-                    resolve({});
+                    reject()
                 }
             });
         });
