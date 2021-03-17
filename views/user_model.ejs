@@ -17,11 +17,10 @@
             <a-input v-model.trim="userModal.user.username"></a-input>
         </a-form-item>
 
-        <a-form-item label="email">
-            <a-input v-model.trim="userModal.user.email"></a-input>
-        </a-form-item>
-        
         <% if (admin) { %>
+            <a-form-item label="email">
+                <a-input v-model.trim="userModal.user.email"></a-input>
+            </a-form-item>
             <a-form-item label="password">
                 <a-input v-model.trim="userModal.user.password"></a-input>
             </a-form-item>

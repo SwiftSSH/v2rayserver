@@ -377,6 +377,7 @@
                         inb.down = user.down;
                         inb.timestamp = user.timestamp;
                         inb.expires = user.expires;
+                        inb.enable = user.enable;
                         return inb;
                     }).reverse();
                 },
@@ -438,8 +439,8 @@
                         protocol: inbound.protocol,
                         confirm: () => {
                             adduserModal.loading();
-                            let { remark, expires, email } = adduserModal.inbound;
-                            let data = { remark, expires, email};
+                            let { remark, expires, email, enable } = adduserModal.inbound;
+                            let data = { remark, expires, email, enable };
                             if(Protocols.VMESS === inbound.protocol) {
                                 data.id = adduserModal.inbound.settings.vmesses[0].id;
                                 data.alterId = adduserModal.inbound.settings.vmesses[0].alterId;

@@ -1,0 +1,155 @@
+<% extend('layout') %>
+
+<a-layout id="app" v-cloak>
+    <% if (admin) { %>
+        <%- include('sidebar') -%>
+    <% } %> 
+    <a-layout id="components-layout" class="layout">
+        <%- include('header') -%>
+        <a-layout-content>
+            <div :style="{ minHeight: '280px' }">
+                <a-layout id="content-layout" style="width: 100%; margin-top: 50px;">
+                    <a-layout-content class="ant-layout-content-pages">
+                    <a-spin :spinning="spinning" :delay="500" tip="loading">
+                        <transition-group tag="div" name="list">
+                            <a-card v-for="server in servers" :key="server.ip" hoverable>
+                                <div slot="title">
+                                    <a-tag class="hidden-sm-and-down" color="green">[[ server.country ]]</a-tag>
+                                    <% if (admin) { %>
+                                        <a-button icon="edit"></a-button>
+                                        <a-popconfirm title="Are you sure you want?"
+                                        ok-text="yes" cancel-text="no">
+                                            <a-button type="danger" icon="delete"></a-button>
+                                        </a-popconfirm>
+                                        <span>https://mickyssh.github.io</span>
+                                    <% } %> 
+                                </div>
+                                <div>
+                                    <a-row>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            username： [[ user.username ]]
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            password： [[ user.password ]]
+                                        </a-col>
+                                    </a-row>
+                                    <a-row>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            ip： <a-tag color="green">[[ server.ip ]]</a-tag>
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            ssh： [[ server.ssh]]
+                                        </a-col>
+                                    </a-row>
+                                    <a-row>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            ssl： [[ server.ssl ]]
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            dropbear： [[ server.dropbear ]]
+                                        </a-col>
+                                    </a-row>
+                                    <a-row>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            squid： [[ server.squid ]]
+                                        </a-col>
+                                        <a-col :xs="24" :sm="24" :lg="12">
+                                            udpgw： [[ server.udpgw ]]
+                                        </a-col>
+                                    </a-row>
+                                </div>
+                            </a-card>
+                        </transition-group>
+                    </a-spin>
+                    </a-layout-content>
+                </a-layout>
+            </div>
+        </a-layout-content>
+    </a-layout>
+</a-layout>
+<style>
+.ant-card {
+    margin-bottom: 20px;
+}
+</style>
+<script>
+
+    let app = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#app',
+        data: {
+            spinning: false,
+            size: 'small',
+            user: {
+                username: "",
+                password: ""
+            },
+            servers: [
+                {
+                    country: "Singapore",
+                    ip: "45.76.190.105",
+                    ssh: 22,
+                    dropbear: 80,
+                    ssl: 443,
+                    squid: 3128,
+                    udpgw: 7300
+                },
+                {
+                    country: "United States",
+                    ip: "129.213.122.165",
+                    ssh: 22,
+                    dropbear: 80,
+                    ssl: 443,
+                    squid: 3128,
+                    udpgw: 7300
+                },
+                {
+                    country: "Australia",
+                    ip: "168.138.10.35",
+                    ssh: 22,
+                    dropbear: 80,
+                    ssl: 443,
+                    squid: 3128,
+                    udpgw: 7300
+                },
+                {
+                    country: "Australia",
+                    ip: "168.138.12.39",
+                    ssh: 22,
+                    dropbear: 80,
+                    ssl: 443,
+                    squid: 3128,
+                    udpgw: 7300
+                },
+                {
+                    country: "India",
+                    ip: "140.238.255.99",
+                    ssh: 22,
+                    dropbear: 80,
+                    ssl: 443,
+                    squid: 3128,
+                    udpgw: 7300
+                },
+                {
+                    country: "India",
+                    ip: "140.238.247.30",
+                    ssh: 22,
+                    dropbear: 80,
+                    ssl: 443,
+                    squid: 3128,
+                    udpgw: 7300
+                }
+            ]
+        }
+    });
+
+</script>
+<style>
+    #components-layout .logo {
+      width: 120px;
+      height: 31px;
+      color: aliceblue;
+      font-size: 20px;
+      float: left;
+    }
+</style>

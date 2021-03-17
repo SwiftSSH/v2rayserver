@@ -42,6 +42,10 @@
         <a-form-item label="Expires (seconds, hours, days, months, years)">
             <a-input v-model.trim="adduserModal.inbound.expires"></a-input>
         </a-form-item>
+
+        <a-form-item label="enable">
+            <a-switch v-model="adduserModal.inbound.enable"></a-switch>
+        </a-form-item>
     </a-form>
 </a-modal>
 <script>

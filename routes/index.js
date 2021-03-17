@@ -84,7 +84,11 @@ router.get('/clients', midleware, function(req, res) {
 });
 
 router.get('/dashboard', function(req, res) {
-  res.render('users_dashboard', { title: 'Dashboard' });
+  res.render('dashboard', { title: 'SwiftSSH' });
+});
+
+router.get('/servers', function(req, res) {
+  res.render('servers', { title: 'SSH/SSL servers' });
 });
 
 router.get('/accounts', midleware, function(req, res) {

@@ -37,11 +37,11 @@ router.post('/setting/default', function(req, res) {
 
 router.post('/setting/update/:setting_id', function(req, res) {
   let { key, value } = req.body;
-  // if (key == 'cert_file' || key == 'key_file') {
-  //   if(!fs.existsSync(value)) {
-  //     return res.json({ success: false, msg: `File ${value} does not exist.`});
-  //   }
-  // }
+  if (key == 'cert_file' || key == 'key_file') {
+    if(!fs.existsSync(value)) {
+      return res.json({ success: false, msg: `File ${value} does not exist.`});
+    }
+  }
   context.store.updateSettings(key, function () {
     try {
       return JSON.parse(value);

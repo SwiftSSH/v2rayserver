@@ -82,7 +82,7 @@ router.post('/inbound/del/user/:uid', function(req, res) {
 });
 
 router.post('/inbound/update/:in_id', JsonBody, adminCheck, function(req, res) {
-    let success = context.store.updateInbound(req.params.in_id, req.body);
+    let success = context.store.updateInbound(req.params.in_id, req.body, true);
     res.json({ msg: success ? 'Successfully updated' : 'port exists', success })
 });
 

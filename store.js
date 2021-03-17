@@ -16,21 +16,41 @@ function Store() {
     this.nginxConfig = "nginxConfig";
     this.settings = "settings";
     this.serverDetails = "details";
-    cron.schedule('* * * * *', () => {
-        //'running a task every minute'
+    setInterval(() => {
         this.removeExpiredAccounts();
-    });
+        this.updateTraffic();
+    }, (6 * 1000) * 10);
 }
 
-function getTraffic(type, tag) {
-    const { instances } = require("./context");
-    let service = instances.get('v2rayService');
-    let traffic = {};
-    if(service) {
-        traffic = service.getTraffic(type, tag);
+Store.prototype.updateTraffic = function () {
+    console.log("updateTraffic");
+    function getTraffic(type, tag) {
+        const { instances } = require("./context");
+        let service = instances.get('v2rayService');
+        let traffic = service.getTraffic(type, tag);
+        return traffic;
     }
-    return traffic;
-}
+    let users = this.getUsers();
+    let inbounds = this.getInbounds();
+    inbounds.forEach((inbound) => { 
+        let traffic = getTraffic("inbound", inbound.tag);
+        // console.log("inbound", traffic)
+        if(traffic.up == 0)
+            delete traffic.up;
+        if(traffic.down == 0)
+            delete traffic.down;
+        this.updateInbound(inbound.id, traffic);
+    });
+    users.forEach((user) => {
+        let traffic = getTraffic("user", user.email);
+        // console.log("user", traffic)
+        if(traffic.up == 0)
+            delete traffic.up;
+        if(traffic.down == 0)
+            delete traffic.down;
+        this.updateUser(user.id, traffic)
+    });
+};
 
 Store.prototype.updateAdmin = function(username, data = {}) {
     let admin = this.getAdmin(username);
@@ -84,14 +104,14 @@ Store.prototype.restart = function () {
 };
 
 Store.prototype.addUser = async function (user) {
-    let userId = user.id || uuid.v4();
+    let userId = uuid.v4();
     user.id = userId;
     user.email = (user.email || userId).toString();
     user.level = 0;
     user.up = 0;
     user.down = 0;
     user.alterId = 64;
-
+    user.enable = typeof user.enable == 'boolean' ? user.enable : true;
     if(!user.agent) {
         user.timestamp = utils.formatExpiryDate(user.expires);
     } else {
@@ -99,11 +119,20 @@ Store.prototype.addUser = async function (user) {
     }
     if(this.isUserRegistered(user.email, user.id)) return false;
     config.set(`${this.usersPrefix}.${userId}`, user);
-    // let service = this.getService();
-    // service.AddUser(user.inboundId, user)
-    // .then(console.log)
-    // .catch((err) => console.log(err.message));
-    if(!user.agent) this.restart();
+    if(!user.agent) {
+        let inbound = this.getInbound(user.inboundId);
+        if(inbound.protocol == constants.protocols.VMESS) { 
+            let service = this.getService();
+            service.AddUser(user.inboundId, user)
+            .then(console.log)
+            .catch((err) => {
+                console.log(err.message)
+                this.restart();
+            });
+        } else {
+            this.restart();
+        }
+    }
     return user.id;
 };
 
@@ -121,27 +150,64 @@ Store.prototype.removeUser = function(emailOrId) {
     let user = this.getUser(emailOrId);
     if(user) {
         config.delete(`${this.usersPrefix}.${user.id}`);
-        // let service = this.getService();
-        // service.RemoveUser(user.inboundId, { email: user.email || user.id  })
-        // .then(console.log)
-        // .catch((err) => console.log(err.message));
-        if(!user.agent) this.restart();
+        let inbound = this.getInbound(user.inboundId);
+        if(!user.agent) {
+            if(inbound.protocol == constants.protocols.VMESS) { 
+                let service = this.getService();
+                service.RemoveUser(user.inboundId, { email: user.email || user.id  })
+                .then(console.log)
+                .catch((err) => {
+                    console.log(err.message);
+                    this.restart();
+                });
+            } else {
+                this.restart();
+            }
+        }
         return true;
     }
-    return false;
 };
 
-Store.prototype.updateUser = async function(emailOrId, data = {}) {
+Store.prototype.proxyAddUser = function (user) {
+    let service = this.getService();
+    service.AddUser(user.inboundId, user)
+    .then(console.log)
+    .catch((err) => {
+        console.log(err.message);
+        this.restart();
+    });
+};
+
+Store.prototype.proxyRemoveUser = function (inboundId, userId) {
+    let service = this.getService();
+    service.RemoveUser(inboundId, { email: userId  })
+    .then(console.log)
+    .catch((err) => {
+        console.log(err.message)
+        this.restart()
+    });
+};
+
+Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
     let user = this.getUser(emailOrId);
     if(user) {
-        if(data.expires && !user.agent) {
-            data.timestamp = utils.formatExpiryDate(data.expires);
+        if(!user.agent) {
+            if(typeof data.enable === 'boolean') {
+                if(data.enable && !user.enable) 
+                    this.proxyAddUser(user); 
+                else
+                    this.proxyRemoveUser(user.inboundId, user.email || user.id);
+                    refresh = false;
+            } 
+            if(data.expires) 
+                data.timestamp = utils.formatExpiryDate(data.expires);
+        } else {
+            if(data.password) 
+                data.password = await bcrypt.hash(user.password.toString(), await bcrypt.genSalt(10))
         }
-        if(user.agent && data.password) {
-            data.password = await bcrypt.hash(user.password.toString(), await bcrypt.genSalt(10))
-        }
-        config.set(`${this.usersPrefix}.${user.id}`, extend(user, data));
-        if(!user.agent) this.restart();
+        config.set(`${this.usersPrefix}.${user.id}`, extend(user, data)); 
+        if(refresh || data.id && (data.id !== user.id))
+            this.restart();
         return true;
     } 
     return false;
@@ -149,17 +215,12 @@ Store.prototype.updateUser = async function(emailOrId, data = {}) {
 
 Store.prototype.getUsers = function(onlyAgents = false, onlyProxed = true) {
     let users = this.getAll(this.usersPrefix);
-    if(onlyProxed) {
-        let all = users.filter((user) => !user.agent);
-        return all.map((user) => {
-            //return extend(user, getTraffic("user", user.email));
-            return user;
-        });
-    } else if(onlyAgents) {
+    if(onlyProxed) 
+        return users.filter((user) => !user.agent);
+    else if(onlyAgents) 
         return users.filter((user) => user.agent);
-    } else {
+    else 
         return users;
-    }
 };
 
 Store.prototype.getAgents = function() {
@@ -180,7 +241,7 @@ Store.prototype.getAll = function(prefix) {
 
 Store.prototype.getUsersByInboundId = function(inboundId) {
     let users = this.getUsers();
-    return users.filter((user) => (user.inboundId == inboundId && !user.agent));
+    return users.filter((user) => ((user.inboundId == inboundId) && !user.agent));
 };
 
 Store.prototype.getUsersByAgentId = function(agentId) {
@@ -193,19 +254,23 @@ Store.prototype.getInbound = function (option) {
     return inbounds.filter((inbound) => (inbound.id == option || inbound.port == option))[0];
 };
 
+Store.prototype.proxyRemoveInbound = function (inboundId) {
+    let service = this.getService();
+    service.RemoveInbound(inboundId)
+    .then(console.log)
+    .catch((err) => {
+        console.log(err.message);
+        this.restart();
+    }); 
+};
+
 Store.prototype.removeInbound = function (id) {
     let inbound = this.getInbound(id);
     if(inbound) {
-        config.delete(`${this.inbounds}.${inbound.id}`);
         let users = this.getUsersByInboundId(id);
         users.map((user) => this.removeUser(user.id));
-        // if(constants.protocols.VMESS == inbound.protocol) {  
-        //     let service = this.getService();
-        //     service.RemoveInbound(inbound.id)
-        //     .then(console.log)
-        //     .catch((err) => console.log(err.message));
-        // }
-        this.restart();
+        config.delete(`${this.inbounds}.${inbound.id}`);
+        this.proxyRemoveInbound(inbound.id);
         return true;
     } 
     return false;
@@ -219,25 +284,28 @@ Store.prototype.getField = function (protocol) {
         return 'clients';
 };
 
-Store.prototype.getInbounds = function () {
-    let inbounds = this.getAll(this.inbounds);
+Store.prototype.getInbounds = function (onlyEnabled=false) {
+    let inbounds = this.getAll(this.inbounds)
     return inbounds.map((inbound) => {
         let users = this.getUsersByInboundId(inbound.id);
         let field = this.getField(inbound.protocol);
-        if(field) {
-            inbound.settings[field] = users.concat(inbound.settings[field]);
-        }
+        if(onlyEnabled) 
+            users = users.filter((user) => user.enable);
+        inbound.settings[field] = users;
         return inbound;
-        // return extend(inbound, getTraffic("inbound", inbound.tag));
     });
 };
 
-Store.prototype.updateInbound = function(id, data = {}, noRefresh) {
+Store.prototype.updateInbound = function(id, data={}, refresh=false) {
     let inbound = this.getInbound(id);
-    if(data.expires) {
-        data.timestamp = utils.formatExpiryDate(data.expires);
-    }
     if(inbound) {
+        if(typeof data.enable === 'boolean') {
+            if(!data.enable && inbound.enable) {
+                this.proxyRemoveInbound(inbound.id);
+            }
+        } 
+        if(data.expires) 
+            data.timestamp = utils.formatExpiryDate(data.expires);
         if(inbound.streamSettings.security == constants.security.TLS) {
             let tlsSettings = inbound.streamSettings.tlsSettings;
             inbound.streamSettings.tlsSettings = extend(
@@ -246,19 +314,24 @@ Store.prototype.updateInbound = function(id, data = {}, noRefresh) {
             )
         }
         config.set(`${this.inbounds}.${inbound.id}`, extend(inbound, data));
-        if(!noRefresh) {
+        if((data.port && data.port !== inbound.port) || 
+            (data.protocol && data.protocol !== inbound.protocol)||
+            (data.listen && data.listen !== inbound.listen) || refresh
+        ) {
             this.restart();   
         }
         return true;
     } 
 };
 
-Store.prototype.updateAllInbounds = function(data = {}) {
+Store.prototype.updateAllInbounds = function(data = {}, refresh=false) {
     let inbounds = this.getInbounds();
     inbounds.forEach((inbound) => {
-        this.updateInbound(inbound.id, data, true);
+        this.updateInbound(inbound.id, data);
     });
-    this.restart();
+    if(refresh) {
+        this.restart();
+    }
 };
 
 Store.prototype.tlsSettings = function(tlsSettings) {
@@ -281,20 +354,18 @@ Store.prototype.addInbound = function(inbound) {
     let isPresent = this.getInbound(inbound.port);
     if(isPresent) return false;
 
-    if(inbound.protocol == constants.protocols.VMESS) {
+    if(inbound.protocol == constants.protocols.VMESS) 
         inbound.detour = { to : "dynamicPort" };
-    }
+    if(inbound.expires) 
+        inbound.timestamp = utils.formatExpiryDate(inbound.expires);
+    if(typeof inbound.maximum_users !== 'number')
+        inbound.maximum_users = 5;
 
     inbound.up = 0;
     inbound.down = 0;
-    inbound.timestamp = utils.formatExpiryDate(inbound.expires);
     inbound.id = uuid.v4();
     inbound.tag = inbound.id;
     inbound.port = parseInt(inbound.port);
-
-    if(typeof inbound.maximum_users !== 'number') {
-        inbound.maximum_users = 5;
-    }
 
     if(inbound.streamSettings.security == constants.security.TLS) {
         let tlsSettings = inbound.streamSettings.tlsSettings;
@@ -305,14 +376,12 @@ Store.prototype.addInbound = function(inbound) {
     }
 
     config.set(`${this.inbounds}.${inbound.id}`, inbound);
-
     // if(inbound.protocol == constants.protocols.VMESS) {
     //     let service = this.getService();
     //     service.AddInbound(inbound.id, inbound.port)
     //     .then(console.log)
     //     .catch((err) => console.log(err.message));
     // }
-    
     this.restart();
     return true;
 };

@@ -61,6 +61,7 @@ module.exports = {
                 inboundId: inbound.id,
                 remark: user.remark,
                 expires: user.expires,
+                enable: user.enable,
                 timestamp: user.timestamp,
                 up: user.up,
                 down: user.down

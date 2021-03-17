@@ -59,7 +59,9 @@ V2RAY.prototype.restart = function() {
 
 V2RAY.prototype.config = function () {
     let v2_template_config = extend(context.store.getSettings('v2_template_config') || this.configTemplate, {});
-    v2_template_config.inbounds = v2_template_config.inbounds.concat(context.store.getInbounds());
+    var inbounds = context.store.getInbounds(true)
+        .filter((inbound) => inbound.enable);
+    v2_template_config.inbounds = v2_template_config.inbounds.concat(inbounds);
     return v2_template_config;
 };
 
@@ -112,7 +114,6 @@ V2RAY.prototype.start = async function(freshStart) {
     this.restarting = false
     context.instances.set('v2rayService', this);
     context.data.set('v2rayVersion', await this.version());
-    // context.data.set('certificates', await this.getCert());
 };
 
 V2RAY.prototype.log = function log(logStr) {
@@ -188,6 +189,8 @@ V2RAY.prototype.getTraffic = function(type, tag, reset = false) {
             "api", "--server=127.0.0.1:10085", 
             "StatsService.QueryStats", 
             `pattern: "${type}>>>${tag}>>>traffic>>>${bound}"`, `reset: ${reset}`
+            //"StatsService.GetStats",
+            //`name: "${type}>>>${tag}>>>traffic>>>${bound}"`, `reset: ${reset}`
         ]);
         try { 
             let result = command.stdout.toString()

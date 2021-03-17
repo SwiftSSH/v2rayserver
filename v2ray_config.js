@@ -1,8 +1,8 @@
 module.exports = {
   "log": {
     "loglevel": "warning",
-    "access": "./log/access.log",
-    "error": "./log/error.log",
+    // "access": "./log/access.log",
+    // "error": "./log/error.log",
   },
   "policy": {
 		"levels": {
@@ -13,20 +13,9 @@ module.exports = {
 		},
 		"system": {
       "statsInboundUplink": true,
-      "statsInboundDownlink": true,
-      "statsOutboundUplink": true,
-      "statsOutboundDownlink": true
+      "statsInboundDownlink": true
 		}
 	},
-  "dns": {
-    "server": [
-    "1.1.1.1",
-    "1.0.0.1",
-    "8.8.8.8",
-    "8.8.4.4",
-    "localhost"
-    ]
-  },
   "api": {
     "services": [
       "HandlerService",
@@ -45,19 +34,8 @@ module.exports = {
       "tag": "api"
     },
     {
-      "port": "10086", 
       "protocol": "vmess",
-      "settings": {
-        "clients": []
-      },
-      "tag": "users_account",
-      "detour": { 
-        "to": "dynamicPort"   
-      }
-    },
-    {
-      "protocol": "vmess",
-      "port": "20000-30000",
+      "port": "20000-40000",
       "tag": "dynamicPort",  
       "settings": {
         "default": {

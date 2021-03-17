@@ -1,0 +1,22 @@
+<a-layout-header :style="{ position: 'fixed', zIndex: 1, width: '100%'}">
+    <!-- <div class="logo">SwiftSSH</div> -->
+    <a-menu
+      theme="dark"
+      mode="horizontal"
+      :default-selected-keys="['#']"
+      :style="{ lineHeight: '64px' }"
+      @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key"
+    >
+      <a-menu-item key="/">
+        V2ray
+      </a-menu-item>
+      <a-menu-item key="/servers">
+        SSH/SSL
+      </a-menu-item>
+      <% if (!admin) { %>
+          <a-menu-item style="float: right; margin-left: 0px;" key="/logout">
+              <a-icon type="logout"></a-icon>
+          </a-menu-item>
+      <% } %> 
+    </a-menu>
+</a-layout-header>
