@@ -26,4 +26,9 @@ router.get('/me/users', function(req, res) {
     res.json(uFinal);
 });
 
+router.post('/traffic/reset/:userId', async function(req, res) {
+    await context.store.updateUser(req.params.userId, {'up': 0, 'down': 0 });
+    res.json({ msg: 'Reset traffic successfully', success: true })
+});
+
 module.exports = router;

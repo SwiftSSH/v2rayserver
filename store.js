@@ -195,7 +195,7 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
             if(typeof data.enable === 'boolean') {
                 if(data.enable && !user.enable) 
                     this.proxyAddUser(user); 
-                else
+                if(!data.enable && user.enable) 
                     this.proxyRemoveUser(user.inboundId, user.email || user.id);
                     refresh = false;
             } 
@@ -299,11 +299,6 @@ Store.prototype.getInbounds = function (onlyEnabled=false) {
 Store.prototype.updateInbound = function(id, data={}, refresh=false) {
     let inbound = this.getInbound(id);
     if(inbound) {
-        if(typeof data.enable === 'boolean') {
-            if(!data.enable && inbound.enable) {
-                this.proxyRemoveInbound(inbound.id);
-            }
-        } 
         if(data.expires) 
             data.timestamp = utils.formatExpiryDate(data.expires);
         if(inbound.streamSettings.security == constants.security.TLS) {
@@ -314,6 +309,14 @@ Store.prototype.updateInbound = function(id, data={}, refresh=false) {
             )
         }
         config.set(`${this.inbounds}.${inbound.id}`, extend(inbound, data));
+
+        if(typeof data.enable === 'boolean') {
+            if(!data.enable && inbound.enable) {
+                this.proxyRemoveInbound(inbound.id);
+                return true;
+            }
+        } 
+
         if((data.port && data.port !== inbound.port) || 
             (data.protocol && data.protocol !== inbound.protocol)||
             (data.listen && data.listen !== inbound.listen) || refresh
@@ -361,6 +364,7 @@ Store.prototype.addInbound = function(inbound) {
     if(typeof inbound.maximum_users !== 'number')
         inbound.maximum_users = 5;
 
+    inbound.enable = typeof inbound.enable == 'boolean' ? inbound.enable : true;
     inbound.up = 0;
     inbound.down = 0;
     inbound.id = uuid.v4();

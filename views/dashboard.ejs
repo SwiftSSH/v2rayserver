@@ -30,12 +30,7 @@
                                     <a-tag color="green">[[ sizeFormat(total.up) ]] / [[ sizeFormat(total.down) ]]</a-tag>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
-                                    total traffic：
-                                    <a-popconfirm title="Are you sure you want to reset all traffic to 0? It\'s unrecoverable"
-                                                  @confirm="resetAllTraffic()"
-                                                  ok-text="confirm" cancel-text="cancel">
-                                        <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
-                                    </a-popconfirm>
+                                    total traffic： <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     accounts： <a-tag color="blue">[[ users.length ]]/[[ me.inbound.maximum_users ]]</a-tag>
@@ -76,9 +71,6 @@
                             <a-row>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     username： [[ user.username ]]
-                                </a-col>
-                                <a-col :xs="24" :sm="24" :lg="12">
-                                    email： [[ user.email ]]
                                 </a-col>
                                 <% if (!admin) { %>
                                     <a-col :xs="24" :sm="24" :lg="12">
@@ -176,10 +168,7 @@
                 });
             },
             resetTraffic(userId) {
-               //this.submit('/v2ray/reset_traffic/user/' + userId);
-            },
-            resetAllTraffic() {
-                this.submit('/v2ray/reset_traffic/' + this.me.inbound.id);
+               this.submit('/api/traffic/reset/' + userId);
             },
             deleteUser(userId) {
                 this.submit('/v2ray/inbound' + '/del/user/' + userId)
@@ -219,7 +208,7 @@
                     this.users.forEach(item => {
                         let regex = new RegExp(`${key}`, "gi");
                         try { 
-                            const found = item.remark.match(regex) || item.id.match(regex) || item.username.match(regex) || item.email.match(regex);
+                            const found = item.remark.match(regex) || item.id.match(regex) || item.username.match(regex)
                             if (found) {
                                 this.searchedData.push(item);
                             }

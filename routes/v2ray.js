@@ -92,12 +92,12 @@ router.post('/inbound/del/:in_id', adminCheck, async function(req, res) {
 });
 
 router.post('/reset_traffic/:in_id', JsonBody, adminCheck, function(req, res) {
-    let success = context.store.updateInbound(req.params.in_id, {'up': 0, 'down': 0});
+    context.store.updateInbound(req.params.in_id, {'up': 0, 'down': 0});
     res.json({ msg: 'Reset traffic successfully', success: true})
 });
 
 router.post('/reset_all_traffic', JsonBody, adminCheck, function(req, res) {
-    let success = context.store.updateAllInbounds({'up': 0, 'down': 0});
+    context.store.updateAllInbounds({'up': 0, 'down': 0});
     res.json({ msg: 'Reset traffic successfully', success: true })
 });
 

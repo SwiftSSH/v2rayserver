@@ -1,8 +1,8 @@
 module.exports = {
   "log": {
     "loglevel": "warning",
-    // "access": "./log/access.log",
-    // "error": "./log/error.log",
+    "access": "./log/access.log",
+    "error": "./log/error.log",
   },
   "policy": {
 		"levels": {
@@ -35,7 +35,7 @@ module.exports = {
     },
     {
       "protocol": "vmess",
-      "port": "20000-40000",
+      "port": "10000-60000",
       "tag": "dynamicPort",  
       "settings": {
         "default": {
@@ -44,8 +44,8 @@ module.exports = {
       },
       "allocate": {            
         "strategy": "random", 
-        "concurrency": 3,  
-        "refresh": 5
+        "concurrency": 2,  
+        "refresh": 3
       }
     }
   ],

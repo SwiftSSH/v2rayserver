@@ -34,16 +34,19 @@ V2RAY.prototype.cmd = function (command) {
 };
 
 V2RAY.prototype.getAPI = function () {
-    let { inbounds } = this.config();
-    let conf = inbounds.filter((inb) => (inb.protocol === constants.protocols.DOKODEMO))[0];
-    let api = new V2rayAPI({ 
-        APIAddr: this.APIAddr || conf.listen, 
-        APIPort: this.APIPort || conf.port, 
-        ProxyFlag:  this.ProxyFlag || conf.tag
-    });
-
-    api.init();
-    return api;
+    let { inbounds } = this.getTemplateConfig();
+    try {
+        let inbound = inbounds.filter((inb) => (inb.protocol === constants.protocols.DOKODEMO))[0];
+        if(inbound) {
+            let api = new V2rayAPI({ 
+                APIAddr: this.APIAddr || inbound.listen, 
+                APIPort: this.APIPort || inbound.port, 
+                ProxyFlag: this.ProxyFlag || inbound.tag
+            });
+            api.init();
+            return api;
+        }
+    } catch(e) {}
 };
 
 V2RAY.prototype.restart = function() {
@@ -58,11 +61,17 @@ V2RAY.prototype.restart = function() {
 };
 
 V2RAY.prototype.config = function () {
-    let v2_template_config = extend(context.store.getSettings('v2_template_config') || this.configTemplate, {});
-    var inbounds = context.store.getInbounds(true)
-        .filter((inbound) => inbound.enable);
-    v2_template_config.inbounds = v2_template_config.inbounds.concat(inbounds);
-    return v2_template_config;
+    try {
+        let v2_template_config = this.getTemplateConfig();
+        var inbounds = context.store.getInbounds(true)
+            .filter((inbound) => inbound.enable);
+        v2_template_config.inbounds = v2_template_config.inbounds.concat(inbounds);
+        return v2_template_config;
+    } catch(e) {}
+};
+
+V2RAY.prototype.getTemplateConfig = function () {
+    return extend(context.store.getSettings('v2_template_config') || this.configTemplate, {});
 };
 
 V2RAY.prototype.start = async function(freshStart) {
@@ -189,8 +198,6 @@ V2RAY.prototype.getTraffic = function(type, tag, reset = false) {
             "api", "--server=127.0.0.1:10085", 
             "StatsService.QueryStats", 
             `pattern: "${type}>>>${tag}>>>traffic>>>${bound}"`, `reset: ${reset}`
-            //"StatsService.GetStats",
-            //`name: "${type}>>>${tag}>>>traffic>>>${bound}"`, `reset: ${reset}`
         ]);
         try { 
             let result = command.stdout.toString()
