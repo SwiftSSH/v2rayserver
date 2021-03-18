@@ -2,7 +2,6 @@ const Configstore = require('configstore');
 const uuid = require('uuid');
 const utils = require("./utils");
 const constants = require("./constants");
-const cron = require('node-cron');
 const moment = require('moment');
 const extend = require("xtend");
 const bcrypt = require("bcryptjs");

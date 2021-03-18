@@ -25,6 +25,11 @@
             padding-left: 50px;
         }
 
+        @media only screen and (max-width: 600px) {
+            #reg-btn {
+                margin-top: 15px;
+            }
+        }
     </style>
 
     <a-layout id="app" v-cloak>
@@ -51,8 +56,16 @@
                                 </a-input>
                             </a-form-item>
                             <a-form-item>
-                                <a-button block @click="login" :loading="loading">login</a-button>
+                                <a-row>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        <a-button block @click="submit(false)" :loading="loading">login</a-button>
+                                    </a-col>
+                                    <a-col :xs="24" :sm="24" :lg="12" id="reg-btn">
+                                        <a-button block @click="submit(true)" :loading="loading" type="primary">Register</a-button>
+                                    </a-col>
+                                </a-row>
                             </a-form-item>
+                            <p><a href="#" style="color: antiquewhite;"> Forgot password ? </a></p>
                         </a-form>
                     </a-col>
                 </a-row>
@@ -74,14 +87,14 @@
                 user: { username: '', password: ''},
             },
             methods: {
-                login() {
+                submit(isRegister) {
                     this.loading = true;
                     post({
-                        url: '/login',
+                        url: isRegister ? '/register' : '/login',
                         data: this.user,
                         success: data => {
                             this.loading = false;
-                            if (data.success) {
+                            if (data.success && !isRegister) {
                                 location.href = '/';
                             }
                         },

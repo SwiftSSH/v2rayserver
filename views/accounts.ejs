@@ -34,12 +34,7 @@
                                     <a-tag color="green">[[ sizeFormat(total.up) ]] / [[ sizeFormat(total.down) ]]</a-tag>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
-                                    total traffic：
-                                    <a-popconfirm title="Are you sure you want to reset all traffic to 0? It\'s unrecoverable"
-                                                  @confirm="resetAllTraffic()"
-                                                  ok-text="confirm" cancel-text="cancel">
-                                        <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
-                                    </a-popconfirm>
+                                    total traffic： <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     number of inbounds：
@@ -496,7 +491,9 @@
                     });
                 },
                 resetTraffic(inbound) {
-                    this.submit('/v2ray/reset_traffic/' + inbound.id);
+                    if(!inbound.isProxy)
+                        this.submit('/api/traffic/reset/'+ inbound.id);
+                    //this.submit((inbound.isProxy ? '/v2ray/reset_traffic/': '/api/traffic/reset/')  + inbound.id);
                 },
                 resetAllTraffic() {
                     this.submit('/v2ray/reset_all_traffic');
@@ -536,9 +533,9 @@
             computed: {
                 total() {
                     let down = 0, up = 0;
-                    for (let i = 0; i < this.inbounds.length; ++i) {
-                        down += this.inbounds[i].down;
-                        up += this.inbounds[i].up;
+                    for (let i = 0; i < this.users.length; ++i) {
+                        down += this.users[i].down;
+                        up += this.users[i].up;
                     }
                     return {
                         down: down,

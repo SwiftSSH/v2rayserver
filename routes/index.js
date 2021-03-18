@@ -4,15 +4,32 @@ const context = require('../context');
 const utils = require("../utils");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const rateLimit = require("express-rate-limit");
 const { SECRET_KEY } = require('../constants');
 
-router.post('/login', async function(req, res) {
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10
+});
+
+router.post('/register', limiter, async function(req, res) {
+  return res.json({ success: false, msg:  "Service unavailable" });
+  let { username, password } = req.body;
+  if(!username || !password) 
+    return res.json({ success: false, msg:  "Some data is missing" });
+  let index = context.pendingUsers.findIndex((user) => user.username == username);
+  if(index >= 0) 
+    return res.json({ success: false, msg:  "Account pending, please wait for confirmation" });
+  context.pendingUsers.push({ username, password });
+  res.json({ success: true, msg:  "Successfully registered, please wait for confirmation" });
+});
+
+router.post('/login', limiter, async function(req, res) {
   let { username, password } = req.body;
   let admin = context.store.getAdmin(username);
   let user = context.store.getUser(username);
   let success = false;
   let data = { admin: false, isDefaultUser: false };
-
   let setToken = function () {
     const token = jwt.sign(data, SECRET_KEY, {
       expiresIn: '1h'
@@ -84,7 +101,10 @@ router.get('/clients', midleware, function(req, res) {
 });
 
 router.get('/dashboard', function(req, res) {
-  res.render('dashboard', { title: 'SwiftSSH' });
+  res.render('dashboard', { 
+    title: 'SwiftSSH', 
+    pendingUsers: JSON.stringify(context.pendingUsers) 
+  });
 });
 
 router.get('/servers', function(req, res) {
