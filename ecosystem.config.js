@@ -12,7 +12,7 @@ module.exports = {
       "repo" : "git@github.com:SwiftSSH/v2rayserver.git",
       "path" : "/home/paul/v2rayserver",
       "post-deploy" : "pip3 install -r requirements.txt && npm install && npm run pm2-restart",
-      "env"  : {
+      "env" : {
         "NODE_ENV": "production"
       }
     }

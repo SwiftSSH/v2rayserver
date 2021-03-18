@@ -12,6 +12,15 @@ const limiter = rateLimit({
   max: 10
 });
 
+if(process.env.NODE_ENV !== 'production') {
+  router.get('/nginx_status', function(req, res) {
+    res.send(`Active connections: 0 
+    server accepts handled requests
+     0 0 0 
+    Reading: 0 Writing: 0 Waiting: 0`);
+  });
+}
+
 router.post('/register', limiter, async function(req, res) {
   return res.json({ success: false, msg:  "Service unavailable" });
   let { username, password } = req.body;
