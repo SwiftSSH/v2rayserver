@@ -101,7 +101,7 @@ module.exports = {
 
     loadbalancerinfo() {
         return new Promise(function (resolve, reject) {
-            request(`https://ind.koodeyo.com/nginx_status`, function (error, response, body) {
+            request(`https://127.0.0.1/nginx_status`, function (error, response, body) {
                 if(error) {
                     body = `Active connections: 0 
                     server accepts handled requests
