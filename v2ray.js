@@ -46,7 +46,9 @@ V2RAY.prototype.getAPI = function () {
             api.init();
             return api;
         }
-    } catch(e) {}
+    } catch(e) {
+        console.log(e.message)
+    }
 };
 
 V2RAY.prototype.restart = function() {
@@ -67,7 +69,9 @@ V2RAY.prototype.config = function () {
             .filter((inbound) => inbound.enable);
         v2_template_config.inbounds = v2_template_config.inbounds.concat(inbounds);
         return v2_template_config;
-    } catch(e) {}
+    } catch(e) {
+        console.log(e.message)
+    }
 };
 
 V2RAY.prototype.getTemplateConfig = function () {
