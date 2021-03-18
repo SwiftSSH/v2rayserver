@@ -10,3 +10,5 @@
 - cloudflare cdn proxy https port(443, 2053, 2083, 2087, 2096, 8443)
 ### PM2 DEPLOY
 - https://gist.github.com/RobertMcReed/c6963a09962adf22c91e7c1370dffc13
+### "Help, I keep getting a 'Permission Denied (publickey)' error when I push!"  DIGITAL OCEAN USERS WHO MIGHT ENCOUNTER THIS PROBLEM
+https://gist.github.com/adamjohnson/5682757
