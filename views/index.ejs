@@ -247,9 +247,21 @@
             },
             getLoadbalancerinfo() {
                 get({
-                    url: '/server/loadbalancerinfo',
-                    success: data => {
-                        this.loadbalancerinfo = data;
+                    url: '/nginx_status',
+                    success: body => {
+                        console.log(body)
+                        try {
+                            const data = {};
+                            const lines = body.split('\n');
+                            data.activeConnections = Number(lines[0].split(' ')[2].trim());
+                            data.accepted = Number(lines[2].split(' ')[1].trim());
+                            data.handled = Number(lines[2].split(' ')[2].trim());
+                            data.total = Number(lines[2].split(' ')[3].trim());
+                            data.reading = Number(lines[3].split(' ')[1].trim());
+                            data.writing = Number(lines[3].split(' ')[3].trim());
+                            data.waiting = Number(lines[3].split(' ')[5].trim());
+                            this.loadbalancerinfo = data;
+                        } catch(e) {}
                     }
                 });
             },

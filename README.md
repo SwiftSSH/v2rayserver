@@ -8,3 +8,5 @@
 ### PORTS PROXED BY CLOUDFLARE
 - https://support.cloudflare.com/hc/en-us/articles 200169156-Identifying-network-ports-compatible-with-Cloudflare-s-proxy
 - cloudflare cdn proxy https port(443, 2053, 2083, 2087, 2096, 8443)
+### PM2 DEPLOY 
+https://gist.github.com/RobertMcReed/c6963a09962adf22c91e7c1370dffc13A
