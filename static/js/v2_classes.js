@@ -534,7 +534,7 @@ class Inbound extends V2CommonClass {
                 streamSettings=new StreamSettings(),
                 tag='',
                 sniffing=new Sniffing(),
-                remark='🌐 Safe Internet',
+                remark='🌐 Safe Internet (' + (location.host.split(".")[0]).toUpperCase() + ')',
                 enable=true,
                 expires = '1 day',
                 maximum_users = 5,

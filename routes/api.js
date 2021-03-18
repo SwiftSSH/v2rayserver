@@ -5,9 +5,11 @@ const context = require('../context');
 router.get('/me', function(req, res) {
     let user = res.locals.user || {};
     if(res.locals.user) {
+        user.inbound = { maximum_users: 0 };
         let inbound = context.store.getInbound(res.locals.user.inboundId);
-        inbound.settings.clients = [];
-        user.inbound = inbound;
+        if(inbound)
+            inbound.settings.clients = [];
+            user.inbound = inbound;
     }
     res.json(user);
 });

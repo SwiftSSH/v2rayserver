@@ -61,8 +61,7 @@
                         <div>
                             <a-row>
                                 <a-col :xs="24" :sm="24" :lg="12">
-                                    id： 
-                                    <a-tag color="green">[[ user.id ]]</a-tag>
+                                    id： <a-tag color="green">[[ user.id ]]</a-tag>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     remark： [[ user.remark ]]
@@ -72,19 +71,27 @@
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     username： [[ user.username ]]
                                 </a-col>
+                                <a-col v-if="user.email" :xs="24" :sm="24" :lg="12">
+                                    email： [[ user.email ]]
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    upload / download：
+                                    <a-tag color="green">[[ sizeFormat(user.up) ]] / [[ sizeFormat(user.down) ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    total traffic：
+                                    <a-popconfirm title="Are you sure you want to reset all traffic to 0? It's unrecoverable"
+                                                  @confirm="resetTraffic(user.id)"
+                                                  ok-text="confirm" cancel-text="cancel">
+                                        <a-tag color="green">[[ sizeFormat(user.up + user.down) ]]</a-tag>
+                                    </a-popconfirm>
+                                </a-col>
+                                <% if (admin) { %>
+                                    <a-col :xs="24" :sm="24" :lg="12">
+                                        accounts： <a-tag color="green">[[ user.total_users_added ]]/[[ user.maximum_users ]]</a-tag>
+                                    </a-col>
+                                <% } %> 
                                 <% if (!admin) { %>
-                                    <a-col :xs="24" :sm="24" :lg="12">
-                                        upload / download：
-                                        <a-tag color="green">[[ sizeFormat(user.up) ]] / [[ sizeFormat(user.down) ]]</a-tag>
-                                    </a-col>
-                                    <a-col :xs="24" :sm="24" :lg="12">
-                                        total traffic：
-                                        <a-popconfirm title="Are you sure you want to reset all traffic to 0? It's unrecoverable"
-                                                      @confirm="resetTraffic(user.id)"
-                                                      ok-text="confirm" cancel-text="cancel">
-                                            <a-tag color="green">[[ sizeFormat(user.up + user.down) ]]</a-tag>
-                                        </a-popconfirm>
-                                    </a-col>
                                     <a-col :xs="24" :sm="24" :lg="12">
                                         expires： <a-tag color="green">[[ getTimestamp(user.timestamp) ]]</a-tag>
                                     </a-col>

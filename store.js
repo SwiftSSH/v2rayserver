@@ -112,11 +112,14 @@ Store.prototype.addUser = async function (user) {
     user.alterId = 64;
     user.enable = typeof user.enable == 'boolean' ? user.enable : true;
     if(!user.agent) {
+        if(this.isUserRegistered(user.email, user.id)) return false;
         user.timestamp = utils.formatExpiryDate(user.expires);
     } else {
+        let agents = this.getAgents();
+        let index = agents.findIndex((agent) => agent.username == user.username);
+        if(index >= 0) return false;
         user.password = await bcrypt.hash(user.password ? user.password.toString() : '12345', await bcrypt.genSalt(10))
     }
-    if(this.isUserRegistered(user.email, user.id)) return false;
     config.set(`${this.usersPrefix}.${userId}`, user);
     if(!user.agent) {
         let inbound = this.getInbound(user.inboundId);
@@ -140,8 +143,8 @@ Store.prototype.isUserRegistered = function (email, Id) {
     return users.filter((u) => u.email == email || u.id == Id)[0];
 };
 
-Store.prototype.getUser = function(option) {
-    let users = this.getUsers(false, false);
+Store.prototype.getUser = function(option, onlyAgents=false) {
+    let users = this.getUsers(onlyAgents, false);
     return users.filter((user) => user.email == option || user.id == option || user.username == option)[0];
 };
 
@@ -201,8 +204,8 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
             if(data.expires) 
                 data.timestamp = utils.formatExpiryDate(data.expires);
         } else {
-            if(data.password) 
-                data.password = await bcrypt.hash(user.password.toString(), await bcrypt.genSalt(10))
+            if(data.password)
+                data.password = await bcrypt.hash(data.password.toString(), await bcrypt.genSalt(10))
         }
         config.set(`${this.usersPrefix}.${user.id}`, extend(user, data)); 
         if(refresh || data.id && (data.id !== user.id))
@@ -224,7 +227,18 @@ Store.prototype.getUsers = function(onlyAgents = false, onlyProxed = true) {
 
 Store.prototype.getAgents = function() {
     let agents = this.getUsers(true, false);
-    return agents;
+    return agents.map((agent) => {
+        let users = this.getUsersByAgentId(agent.id);
+        let inbound = this.getInbound(agent.inboundId);
+        agent.maximum_users = 0;
+        if(inbound) {
+            agent.up = inbound.up;
+            agent.down = inbound.down;
+            agent.maximum_users = inbound.maximum_users;
+        }
+        agent.total_users_added = users.length;
+        return agent;
+    });
 };
 
 Store.prototype.getAll = function(prefix) {

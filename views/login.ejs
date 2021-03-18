@@ -45,13 +45,13 @@
                         <a-form>
                             <a-form-item>
                                 <a-input v-model.trim="user.username" placeholder="username or email"
-                                         @keydown.enter.native="login" autofocus>
+                                         @keydown.enter.native="submit(false)" autofocus>
                                     <a-icon slot="prefix" type="user" style="color: rgba(0,0,0,.25)"/>
                                 </a-input>
                             </a-form-item>
                             <a-form-item>
                                 <a-input type="password" v-model.trim="user.password"
-                                        placeholder="password" @keydown.enter.native="login">
+                                        placeholder="password" @keydown.enter.native="submit(false)">
                                     <a-icon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)"/>
                                 </a-input>
                             </a-form-item>
@@ -61,7 +61,7 @@
                                         <a-button block @click="submit(false)" :loading="loading">login</a-button>
                                     </a-col>
                                     <a-col :xs="24" :sm="24" :lg="12" id="reg-btn">
-                                        <a-button block @click="submit(true)" :loading="loading" type="primary">Register</a-button>
+                                        <a-button block @click="submit(true)" :loading="loading2" type="primary">Register</a-button>
                                     </a-col>
                                 </a-row>
                             </a-form-item>
@@ -84,6 +84,7 @@
             el: '#app',
             data: {
                 loading: false,
+                loading2: false,
                 user: { username: '', password: ''},
             },
             methods: {

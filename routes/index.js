@@ -36,7 +36,7 @@ router.post('/register', limiter, async function(req, res) {
 router.post('/login', limiter, async function(req, res) {
   let { username, password } = req.body;
   let admin = context.store.getAdmin(username);
-  let user = context.store.getUser(username);
+  let user = context.store.getUser(username, true);
   let success = false;
   let data = { admin: false, isDefaultUser: false };
   let setToken = function () {
