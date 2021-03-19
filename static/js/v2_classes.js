@@ -528,7 +528,7 @@ class Sniffing extends V2CommonClass {
 
 class Inbound extends V2CommonClass {
     constructor(port=randomIntRange(10000, 60000),
-                listen='0.0.0.0',
+                listen='127.0.0.1',
                 protocol=Protocols.VMESS,
                 settings=null,
                 streamSettings=new StreamSettings(),
@@ -538,7 +538,7 @@ class Inbound extends V2CommonClass {
                 enable=true,
                 expires = '1 day',
                 maximum_users = 5,
-                email = null
+                inboundId = null
                 ) {
         super();
         this.port = port;
@@ -551,7 +551,7 @@ class Inbound extends V2CommonClass {
         this.sniffing = sniffing;
         this.remark = remark;
         this.enable = enable;
-        this.email = email;
+        this.inboundId = inboundId;
         this.maximum_users = maximum_users;
     }
 

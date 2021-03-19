@@ -12,5 +12,9 @@ module.exports = Object.freeze({
     SECRET_KEY: "VGGVknJ6z21gEyKIUFaz7mJ0P2fzaWIL",
     security: {
         TLS: 'tls'
+    },
+    status: {
+        TIMEOUT: 'timeout',
+        BARNED: "barned"
     }
 });

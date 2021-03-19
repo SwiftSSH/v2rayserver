@@ -63,8 +63,10 @@ module.exports = {
                 expires: user.expires,
                 enable: user.enable,
                 timestamp: user.timestamp,
+                onDeleteTimestamp: user.onDeleteTimestamp,
                 up: user.up,
-                down: user.down
+                down: user.down,
+                status: user.status
             });
         });
     },

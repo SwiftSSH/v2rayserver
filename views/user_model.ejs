@@ -9,7 +9,7 @@
             </a-form-item>
         <% } %> 
 
-        <a-form-item label="remark">
+        <a-form-item label="remark" v-if="!userModal.user.agent">
             <a-input v-model.trim="userModal.user.remark"></a-input>
         </a-form-item>
 
@@ -35,6 +35,9 @@
         </a-form-item>
         
         <% if (admin) { %>
+            <a-form-item label="maximum users" v-if="userModal.user.agent">
+                <a-input type="number" v-model.number="userModal.user.maximum_users"></a-input>
+            </a-form-item>
             <a-form-item label="Agent">
                 <a-switch v-model="userModal.user.agent"></a-switch>
             </a-form-item>
@@ -44,13 +47,14 @@
 <script>
 
     class UserModel {
-        constructor({ remark, inboundId, expires, username, agent, id, email, password, enable, protocol }) {
+        constructor({ remark, inboundId, expires, maximum_users, username, agent, id, email, password, enable, protocol }) {
             this.username = username;
             this.remark = remark;
             this.inboundId = inboundId;
             this.email = email;
             this.password = password;
             this.expires = expires || 1;
+            this.maximum_users = maximum_users || 5;
             this.enable = typeof enable !== 'boolean' ? true : enable;
             this.agent = agent;
             this.id = id;

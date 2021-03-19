@@ -16,13 +16,12 @@ function Store() {
     this.settings = "settings";
     this.serverDetails = "details";
     setInterval(() => {
-        this.removeExpiredAccounts();
+        this.handleExpiredAccounts();
         this.updateTraffic();
     }, (6 * 1000) * 10);
 }
 
 Store.prototype.updateTraffic = function () {
-    console.log("updateTraffic");
     function getTraffic(type, tag) {
         const { instances } = require("./context");
         let service = instances.get('v2rayService');
@@ -51,43 +50,20 @@ Store.prototype.updateTraffic = function () {
     });
 };
 
-Store.prototype.updateAdmin = function(username, data = {}) {
-    let admin = this.getAdmin(username);
-    config.delete(`${this.admin}.${username}`);
-    config.set(`${this.admin}.${data.username}`, extend(admin, data));
-};
-
-Store.prototype.resetAdmin = function(username) {
-    config.delete(`${this.admin}.${username}`);  
-};
-
-Store.prototype.getAdmin = function(username) {
-    return config.get(`${this.admin}.${username}`);
-};
-
-Store.prototype.getSettings = function(key) {
-    return config.get(`${this.settings}.${key}`);
-};
-
-Store.prototype.resetSettings = function() {
-    config.delete(this.settings);
-};
-
-Store.prototype.updateSettings = function(key, value) {
-    config.set(`${this.settings}.${key}`, value);
-};
-
-Store.prototype.removeExpiredAccounts = function () {
-    let users = this.getUsers();
-    let inbounds = this.getInbounds();
-    var now = moment().utc();
-    let xUsers = users.filter((user) => user.timestamp && now.isAfter(user.timestamp));
-    let xInbounds = inbounds.filter((inbound) => inbound.timestamp && now.isAfter(inbound.timestamp));
+Store.prototype.handleExpiredAccounts = function () {
+    let xUsers = this.getUsers()
+    .filter((user) => user.timestamp && this.isExpired(user.timestamp));
     xUsers.forEach((xuser) => {
-        this.removeUser(xuser.id);
-    });
-    xInbounds.forEach((xinbound) => {
-        this.removeInbound(xinbound.id);
+        if(xuser.onDeleteTimestamp) {
+            if(this.isExpired(xuser.onDeleteTimestamp)) 
+                config.delete(`${this.usersPrefix}.${xuser.id}`);
+        } else {
+            this.updateUser(xuser.id, { 
+                enable: false, 
+                status: constants.status.TIMEOUT,
+                onDeleteTimestamp: utils.formatExpiryDate(30)
+            });
+        }
     });
 };
 
@@ -114,6 +90,7 @@ Store.prototype.addUser = async function (user) {
     if(!user.agent) {
         if(this.isUserRegistered(user.email, user.id)) return false;
         user.timestamp = utils.formatExpiryDate(user.expires);
+        user.email = userId;
     } else {
         let agents = this.getAgents();
         let index = agents.findIndex((agent) => agent.username == user.username);
@@ -192,18 +169,44 @@ Store.prototype.proxyRemoveUser = function (inboundId, userId) {
 
 Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
     let user = this.getUser(emailOrId);
+    // prevent agent to user switch
+    delete data.agent;
     if(user) {
+        function resetTimeout(timeout) {
+            delete user.status;
+            delete user.onDeleteTimestamp;
+            data.timestamp = utils.formatExpiryDate(timeout);
+        }
+        
         if(!user.agent) {
             if(typeof data.enable === 'boolean') {
-                if(data.enable && !user.enable) 
+                if(data.enable && !user.enable) {
+                    if(user.status == constants.status.TIMEOUT){
+                        resetTimeout(data.expires !== user.expires ? data.expires : user.expires);
+                        data.enable = true;
+                    }
                     this.proxyAddUser(user); 
-                if(!data.enable && user.enable) 
-                    this.proxyRemoveUser(user.inboundId, user.email || user.id);
+                } else if(!data.enable && user.enable) {
+                    this.proxyRemoveUser(user.inboundId, user.id);
                     refresh = false;
+                }
             } 
-            if(data.expires) 
-                data.timestamp = utils.formatExpiryDate(data.expires);
+            if(data.inboundId && data.inboundId !== user.inboundId) {
+                if(user.enable) {
+                    this.proxyRemoveUser(user.inboundId, user.id);
+                    user.inboundId = data.inboundId;
+                    this.proxyAddUser(user); 
+                }
+            }
+            if(data.expires && data.expires !== user.expires) {
+                if(user.status == constants.status.TIMEOUT) {
+                    data.enable = true;
+                }
+                resetTimeout(data.expires);
+            }
         } else {
+            if(data.maximum_users)
+                this.updateInbound(user.inboundId, { maximum_users: data.maximum_users });
             if(data.password)
                 data.password = await bcrypt.hash(data.password.toString(), await bcrypt.genSalt(10))
         }
@@ -277,13 +280,14 @@ Store.prototype.proxyRemoveInbound = function (inboundId) {
     }); 
 };
 
-Store.prototype.removeInbound = function (id) {
+Store.prototype.removeInbound = function (id, refresh=true) {
     let inbound = this.getInbound(id);
     if(inbound) {
         let users = this.getUsersByInboundId(id);
         users.map((user) => this.removeUser(user.id));
         config.delete(`${this.inbounds}.${inbound.id}`);
-        this.proxyRemoveInbound(inbound.id);
+        if(refresh)
+            this.proxyRemoveInbound(inbound.id);
         return true;
     } 
     return false;
@@ -299,6 +303,8 @@ Store.prototype.getField = function (protocol) {
 
 Store.prototype.getInbounds = function (onlyEnabled=false) {
     let inbounds = this.getAll(this.inbounds)
+    if(onlyEnabled) 
+        inbounds = inbounds.filter((inbound) => inbound.enable);
     return inbounds.map((inbound) => {
         let users = this.getUsersByInboundId(inbound.id);
         let field = this.getField(inbound.protocol);
@@ -312,8 +318,6 @@ Store.prototype.getInbounds = function (onlyEnabled=false) {
 Store.prototype.updateInbound = function(id, data={}, refresh=false) {
     let inbound = this.getInbound(id);
     if(inbound) {
-        if(data.expires) 
-            data.timestamp = utils.formatExpiryDate(data.expires);
         if(inbound.streamSettings.security == constants.security.TLS) {
             let tlsSettings = inbound.streamSettings.tlsSettings;
             inbound.streamSettings.tlsSettings = extend(
@@ -321,6 +325,7 @@ Store.prototype.updateInbound = function(id, data={}, refresh=false) {
                 this.tlsSettings(tlsSettings)
             )
         }
+        
         config.set(`${this.inbounds}.${inbound.id}`, extend(inbound, data));
 
         if(typeof data.enable === 'boolean') {
@@ -331,7 +336,7 @@ Store.prototype.updateInbound = function(id, data={}, refresh=false) {
         } 
 
         if((data.port && data.port !== inbound.port) || 
-            (data.protocol && data.protocol !== inbound.protocol)||
+            (data.protocol && data.protocol !== inbound.protocol) ||
             (data.listen && data.listen !== inbound.listen) || refresh
         ) {
             this.restart();   
@@ -372,8 +377,6 @@ Store.prototype.addInbound = function(inbound) {
 
     if(inbound.protocol == constants.protocols.VMESS) 
         inbound.detour = { to : "dynamicPort" };
-    if(inbound.expires) 
-        inbound.timestamp = utils.formatExpiryDate(inbound.expires);
     if(typeof inbound.maximum_users !== 'number')
         inbound.maximum_users = 5;
 
@@ -401,6 +404,37 @@ Store.prototype.addInbound = function(inbound) {
     // }
     this.restart();
     return true;
+};
+
+Store.prototype.updateAdmin = function(username, data = {}) {
+    let admin = this.getAdmin(username);
+    config.delete(`${this.admin}.${username}`);
+    config.set(`${this.admin}.${data.username}`, extend(admin, data));
+};
+
+Store.prototype.resetAdmin = function(username) {
+    config.delete(`${this.admin}.${username}`);  
+};
+
+Store.prototype.getAdmin = function(username) {
+    return config.get(`${this.admin}.${username}`);
+};
+
+Store.prototype.getSettings = function(key) {
+    return config.get(`${this.settings}.${key}`);
+};
+
+Store.prototype.resetSettings = function() {
+    config.delete(this.settings);
+};
+
+Store.prototype.updateSettings = function(key, value) {
+    config.set(`${this.settings}.${key}`, value);
+};
+
+Store.prototype.isExpired = function(timestamp) {
+    var now = moment().utc();
+    return now.isAfter(timestamp);
 };
 
 module.exports = Store;

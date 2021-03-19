@@ -2,11 +2,12 @@
          :confirm-loading="adduserModal.confirmLoading" :closable="true" :mask-closable="false"
          :ok-text="adduserModal.okText" cancel-text="close">
     <a-form layout="inline">
+        <a-form-item label="inbound id" v-if="adduserModal.hasInboundId">
+            <a-input v-model.trim="adduserModal.inbound.inboundId"></a-input>
+        </a-form-item>
+        
         <a-form-item label="remark">
             <a-input v-model.trim="adduserModal.inbound.remark"></a-input>
-        </a-form-item>
-        <a-form-item label="email">
-            <a-input v-model.trim="adduserModal.inbound.email"></a-input>
         </a-form-item>
 
         <a-form v-if="adduserModal.inbound.protocol === Protocols.VMESS" layout="inline">
@@ -66,6 +67,8 @@
             if (inbound) {
                 this.inbound = Inbound.fromJson(inbound.toJson());
                 this.inbound.expires = inbound.expires;
+                this.inbound.inboundId = inbound.inboundId;
+                this.hasInboundId = (inbound.inboundId && inbound.inboundId.length > 1);
             } else {
                 this.inbound = new Inbound(null, null, protocol);
             }

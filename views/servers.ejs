@@ -14,7 +14,7 @@
                         <transition-group tag="div" name="list">
                             <a-card v-for="server in servers" :key="server.ip" hoverable>
                                 <div slot="title">
-                                    <a-tag class="hidden-sm-and-down" color="green">[[ server.country ]]</a-tag>
+                                    <a-tag color="green">[[ server.country ]]</a-tag>
                                     <% if (admin) { %>
                                         <a-button icon="edit"></a-button>
                                         <a-popconfirm title="Are you sure you want?"

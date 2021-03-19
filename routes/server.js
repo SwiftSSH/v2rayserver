@@ -59,10 +59,10 @@ router.post('/setting/update/:setting_id', function(req, res) {
 
 router.post('/user/update', async function(req, res) {
   let { old_username, old_password, username, password} = req.body;
-  let update = async function() {
+  let update = async function(admin, isMatch) {
     context.store.updateAdmin(old_username, { 
-      username, 
-      password: await bcrypt.hash(password.toString(), await bcrypt.genSalt(10))
+      username: username ? username : admin.username, 
+      password: password ? await bcrypt.hash(password.toString(), await bcrypt.genSalt(10)) : admin.password
     });
     res.json({ success: true, msg: "update success"});
   };
@@ -72,7 +72,7 @@ router.post('/user/update', async function(req, res) {
   if(admin) {
     const isMatch = await bcrypt.compare(old_password, admin.password);
     if(isMatch) {
-      return update();
+      return update(admin, isMatch);
     }
   } else if(old_username === 'admin' && old_password === 'admin') {
     return update();

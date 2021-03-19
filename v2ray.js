@@ -66,7 +66,6 @@ V2RAY.prototype.config = function () {
     try {
         let v2_template_config = this.getTemplateConfig();
         var inbounds = context.store.getInbounds(true)
-            .filter((inbound) => inbound.enable);
         v2_template_config.inbounds = v2_template_config.inbounds.concat(inbounds);
         return v2_template_config;
     } catch(e) {
@@ -100,8 +99,7 @@ V2RAY.prototype.start = async function(freshStart) {
             context.instances.set('v2rayApi', this.getAPI());
             this.apiLoaded = true;
         }
-        console.log(`${data}`);
-        // console.log(this.log(`${data}`));
+        this.logger(`${data}`);
     });
     
     this.v2rayProc.stderr.on('data', (data) => {
@@ -129,13 +127,16 @@ V2RAY.prototype.start = async function(freshStart) {
     context.data.set('v2rayVersion', await this.version());
 };
 
-V2RAY.prototype.log = function log(logStr) {
+V2RAY.prototype.logger = function (logStr) {
+    console.log(logStr);
+    
     let data = logStr.split(" ");
-    let clean = (str) => str.replace(/\n/g, "").replace(/\[/g,"")
+    let clean = (str) => str
+    .replace(/\n/g, "")
+    .replace(/\[/g,"")
     .replace(/\]/g,"");
     
     let output = {
-        log: logStr,
         date: data[0], time: data[1],
         status: data[3],
         source: {
@@ -145,8 +146,7 @@ V2RAY.prototype.log = function log(logStr) {
     };
 
     if(output.status === 'accepted') {
-        let lastVal = data[data.length - 1];
-        output[lastVal.includes('@') ? 'email': 'tag'] = clean(lastVal);
+        output.tag = clean(data[data.length - 1]);
         output.target = {
             protocol: data[4].split(':')[0],
             address: data[4].split(':')[1],
@@ -157,7 +157,7 @@ V2RAY.prototype.log = function log(logStr) {
         output.ref = data[data.length - 3].split(":")[0];
     }
 
-    return output;
+    // console.log(output)
 };
 
 V2RAY.prototype.stop = function() {
@@ -194,7 +194,7 @@ V2RAY.prototype.getCert = function () {
     });
 };
 
-V2RAY.prototype.getTraffic = function(type, tag, reset = false) {
+V2RAY.prototype.getTraffic = function(type, tag, reset=false) {
     let output = {down: 0, up: 0 };
     [{ bound: "downlink", key: "down" },{ bound: "uplink", key: "up"}]
     .forEach(({ bound, key }) => {

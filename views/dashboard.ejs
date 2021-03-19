@@ -63,9 +63,14 @@
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     id： <a-tag color="green">[[ user.id ]]</a-tag>
                                 </a-col>
-                                <a-col :xs="24" :sm="24" :lg="12">
+                                <a-col :xs="24" :sm="24" :lg="12" v-if="user.remark">
                                     remark： [[ user.remark ]]
                                 </a-col>
+                                <% if (admin) { %>
+                                    <a-col :xs="24" :sm="24" :lg="12" v-if="user.inboundId">
+                                        inbound id： <a-tag color="green">[[ user.inboundId ]]</a-tag>
+                                    </a-col>
+                                <% } %> 
                             </a-row>
                             <a-row>
                                 <a-col :xs="24" :sm="24" :lg="12">
@@ -96,6 +101,15 @@
                                         expires： <a-tag color="green">[[ getTimestamp(user.timestamp) ]]</a-tag>
                                     </a-col>
                                 <% } %> 
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    enable：
+                                    <a-popconfirm :title="user.enable ? 'Whether to disable' : 'Whether to enable'"
+                                                  @confirm="setEnable(user.id, !user.enable)"
+                                                  ok-text="yes" cancel-text="no">
+                                        <a-tag v-if="user.enable" color="green">yes</a-tag>
+                                        <a-tag v-else color="red">no</a-tag>
+                                    </a-popconfirm>
+                                </a-col>
                             </a-row>
                         </div>
                     </a-card>
@@ -138,7 +152,6 @@
         },
         methods: {
             genLink(user){
-                console.log(user)
                 if(this.me.inbound) {
                     let copy = { ...this.me.inbound };
                     copy.settings.clients.push(user);
@@ -153,6 +166,10 @@
             },
             loading(spinning=true) {
                 this.spinning = spinning;
+            },
+            setEnable(userId, enable) {
+                let data = { enable: enable };
+                this.submit('/v2ray/inbound/update/user/'+ userId, data);
             },
             getMe() {
                 get({
@@ -215,7 +232,10 @@
                     this.users.forEach(item => {
                         let regex = new RegExp(`${key}`, "gi");
                         try { 
-                            const found = item.remark.match(regex) || item.id.match(regex) || item.username.match(regex)
+                            const found = item.remark.match(regex) 
+                            || item.id.match(regex) 
+                            || item.username.match(regex)
+                            || item.user.inboundId.match(regex)
                             if (found) {
                                 this.searchedData.push(item);
                             }

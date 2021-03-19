@@ -6,7 +6,7 @@ const extend = require("xtend");
 
 let adminCheck = function(req, res, next) {
     if(res.locals.admin) {
-      return next()
+      return next();
     }
     res.send({ success: false, msg: "Authentication Error" })
 };
@@ -82,7 +82,7 @@ router.post('/inbound/del/user/:uid', function(req, res) {
 });
 
 router.post('/inbound/update/:in_id', JsonBody, adminCheck, function(req, res) {
-    let success = context.store.updateInbound(req.params.in_id, req.body, true);
+    let success = context.store.updateInbound(req.params.in_id, req.body);
     res.json({ msg: success ? 'Successfully updated' : 'port exists', success })
 });
 

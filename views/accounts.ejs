@@ -289,9 +289,16 @@
                                         </a-tag>
                                         </a-col>
                                     </template>
-                                    <a-col :xs="24" :sm="24" :lg="12">
+                                    <a-col :xs="24" :sm="24" :lg="12" v-if="item.timestamp">
                                         expires：
                                         <a-tag color="green">[[ getTimestamp(item.timestamp) ]]</a-tag>
+                                    </a-col>
+                                    <a-col v-if="item.onDeleteTimestamp" :xs="24" :sm="24" :lg="12">
+                                        deletes：
+                                        <a-tag color="green">[[ getTimestamp(item.onDeleteTimestamp) ]]</a-tag>
+                                    </a-col>
+                                    <a-col v-if="item.status" :xs="24" :sm="24" :lg="12">
+                                        status：<a-tag color="green">[[ item.status ]]</a-tag>
                                     </a-col>
                                 </a-row>
                             </div>
@@ -368,11 +375,13 @@
                         let inb = Inbound.fromJson(user);
                         inb.id = user.id;
                         inb.up = user.up;
-                        inb.inboundId = user.inboundId;
                         inb.down = user.down;
+                        inb.inboundId = user.inboundId;
                         inb.timestamp = user.timestamp;
+                        inb.onDeleteTimestamp = user.onDeleteTimestamp;
                         inb.expires = user.expires;
                         inb.enable = user.enable;
+                        inb.status = user.status;
                         return inb;
                     }).reverse();
                 },
@@ -384,9 +393,8 @@
                         inb.up = inbound.up;
                         inb.down = inbound.down;
                         inb.isProxy = true;
-                        inb.timestamp = inbound.timestamp;
-                        inb.expires = inbound.expires;
                         inb.maximum_users = inbound.maximum_users;
+                        inb.status = inbound.status;
                         return inb;
                     }).reverse();
                 },
@@ -397,10 +405,14 @@
                         this.searchedData.splice(0, this.searchedData.length);
                         this.data.forEach(item => {
                             let regex = new RegExp(`${key}`, "gi");
-                            const found = item.remark.match(regex) || item.id.match(regex);
-                            if (found) {
-                                this.searchedData.push(item);
-                            }
+                            try {
+                                const found = item.remark.match(regex) 
+                                || item.id.match(regex)
+                                || item.inboundId.match(regex);
+                                if (found) {
+                                    this.searchedData.push(item);
+                                }
+                            } catch(e) {}
                         });
                     }
                 },
@@ -434,8 +446,8 @@
                         protocol: inbound.protocol,
                         confirm: () => {
                             adduserModal.loading();
-                            let { remark, expires, email, enable } = adduserModal.inbound;
-                            let data = { remark, expires, email, enable };
+                            let { remark, expires, email, enable, inboundId } = adduserModal.inbound;
+                            let data = { remark, expires, email, enable, inboundId };
                             if(Protocols.VMESS === inbound.protocol) {
                                 data.id = adduserModal.inbound.settings.vmesses[0].id;
                                 data.alterId = adduserModal.inbound.settings.vmesses[0].alterId;
@@ -447,7 +459,7 @@
                             } else if(Protocols.TROJAN === inbound.protocol) {
                                 data.password = adduserModal.inbound.settings.clients[0].password;
                             }
-                            this.submit('/v2ray/inbound/' + (update ? 'update': 'add') + '/user/' + inbound.id, data, adduserModal, () => adduserModal.closeLoading(), () => adduserModal.closeLoading());
+                            this.submit('/v2ray/inbound/' + (update ? 'update': 'add') + ('/user/') + inbound.id, data, adduserModal, () => adduserModal.closeLoading(), () => adduserModal.closeLoading());
                         },
                     });
                 },
@@ -455,7 +467,6 @@
                     let data = {
                         port: inbound.port,
                         listen: inbound.listen,
-                        expires: inbound.expires,
                         maximum_users: inbound.maximum_users,
                         protocol: inbound.protocol,
                         settings: inbound.settings.toString(false),
@@ -471,7 +482,7 @@
                         port: inbound.port,
                         listen: inbound.listen,
                         protocol: inbound.protocol,
-                        expires: inbound.expires,
+                        maximum_users: inbound.maximum_users,
                         settings: inbound.settings.toString(false),
                         streamSettings: inbound.stream.toString(false),
                         sniffing: [Protocols.VMESS, Protocols.SHADOWSOCKS].indexOf(inbound.protocol) >= 0 ?
@@ -491,16 +502,14 @@
                     });
                 },
                 resetTraffic(inbound) {
-                    if(!inbound.isProxy)
-                        this.submit('/api/traffic/reset/'+ inbound.id);
-                    //this.submit((inbound.isProxy ? '/v2ray/reset_traffic/': '/api/traffic/reset/')  + inbound.id);
+                    this.submit((inbound.isProxy ? '/v2ray/reset_traffic/': '/api/traffic/reset/')  + inbound.id);
                 },
                 resetAllTraffic() {
                     this.submit('/v2ray/reset_all_traffic');
                 },
                 setEnable(inbound, enable) {
-                    let data = {enable: enable};
-                    this.submit('/v2ray/inbound/update/' + inbound.id, data);
+                    let data = { enable: enable };
+                    this.submit('/v2ray/inbound/update/'+ (!inbound.isProxy ? 'user/': '') + inbound.id, data);
                 },
                 submit(url, data, modal, success, error) {
                     post({
