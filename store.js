@@ -171,6 +171,7 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
     let user = this.getUser(emailOrId);
     // prevent agent to user switch
     delete data.agent;
+    let proxyUserAdded = false;
     if(user) {
         function resetTimeout(timeout) {
             delete user.status;
@@ -181,11 +182,12 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
         if(!user.agent) {
             if(typeof data.enable === 'boolean') {
                 if(data.enable && !user.enable) {
-                    if(user.status == constants.status.TIMEOUT){
-                        resetTimeout(data.expires !== user.expires ? data.expires : user.expires);
+                    if(user.status == constants.status.TIMEOUT) {
+                        resetTimeout(data.expires && data.expires !== user.expires ? data.expires : user.expires);
                         data.enable = true;
                     }
                     this.proxyAddUser(user); 
+                    proxyUserAdded = true
                 } else if(!data.enable && user.enable) {
                     this.proxyRemoveUser(user.inboundId, user.id);
                     refresh = false;
@@ -195,12 +197,19 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
                 if(user.enable) {
                     this.proxyRemoveUser(user.inboundId, user.id);
                     user.inboundId = data.inboundId;
-                    this.proxyAddUser(user); 
+                    if(!proxyUserAdded) {
+                        proxyUserAdded = true
+                        this.proxyAddUser(user); 
+                    } 
                 }
             }
             if(data.expires && data.expires !== user.expires) {
                 if(user.status == constants.status.TIMEOUT) {
                     data.enable = true;
+                    if(!proxyUserAdded) {
+                        proxyUserAdded = true
+                        this.proxyAddUser(user); 
+                    } 
                 }
                 resetTimeout(data.expires);
             }

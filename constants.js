@@ -8,6 +8,8 @@ module.exports = Object.freeze({
         MTPROTO: 'mtproto',
         SOCKS: 'socks',
         HTTP: 'http',
+        TCP:'tcp',
+        UDP:'udp'
     },
     SECRET_KEY: "VGGVknJ6z21gEyKIUFaz7mJ0P2fzaWIL",
     security: {
@@ -16,5 +18,9 @@ module.exports = Object.freeze({
     status: {
         TIMEOUT: 'timeout',
         BARNED: "barned"
+    },
+    env: {
+        PRODUCTION: 'production',
+        DEVELOPMENT: 'development'
     }
 });

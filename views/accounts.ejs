@@ -128,6 +128,9 @@
                                                 <a-tag v-else color="green">auto</a-tag>
                                             </a-col>
                                         </template>
+                                        <a-col v-if="!item.isProxy" :xs="24" :sm="24" :lg="12">
+                                            inbound id： <a-tag color="green">[[ item.inboundId ]]</a-tag>
+                                        </a-col>
                                         <template v-if="!item.isProxy && item.protocol === Protocols.VLESS">
                                             <a-col :xs="24" :sm="24" :lg="12">
                                                 id：

@@ -23,6 +23,7 @@ function V2RAY({ v2rayPath, configPath, host, port, APIAddr, APIPort, ProxyFlag 
     this.apiLoaded = false;
     this.restarting = false;
     this.code = 1;
+    this.clients = new Map();
     context.nodeEvent.on('restart', this.restart.bind(this));
     context.nodeEvent.on('command', this.cmd.bind(this));
 };
@@ -128,8 +129,6 @@ V2RAY.prototype.start = async function(freshStart) {
 };
 
 V2RAY.prototype.logger = function (logStr) {
-    console.log(logStr);
-    
     let data = logStr.split(" ");
     let clean = (str) => str
     .replace(/\n/g, "")
@@ -147,17 +146,37 @@ V2RAY.prototype.logger = function (logStr) {
 
     if(output.status === 'accepted') {
         output.tag = clean(data[data.length - 1]);
+        output.accepted = true
         output.target = {
             protocol: data[4].split(':')[0],
             address: data[4].split(':')[1],
             port: data[4].split(':')[2]
         }
+        this.accessLog(output);
     } else {
         output.message = clean(`${data[data.length - 2]} ${data[data.length - 1]}`),
         output.ref = data[data.length - 3].split(":")[0];
+        if(output.status == 'rejected') {
+            output.accepted = false;
+            this.accessLog(output);
+        } else {
+            console.log(logStr)
+        }
     }
+};
 
-    // console.log(output)
+V2RAY.prototype.accessLog = function(log) {
+    if(process.env.NODE_ENV !== constants.env.PRODUCTION) console.log(log);
+    if(log.tag !== 'api' && log.accepted){
+        if(log.target.protocol == constants.protocols.TCP) {
+            // if(!this.clients.has(log.tag)){
+            //     let client = this.clients.get(log.tag);
+            //     this.clients.set(log.tag, [].push(log.source.ip))
+            // } else {
+            //     this.clients.set(log.tag, [log.source.ip]);
+            // }
+        }
+    }
 };
 
 V2RAY.prototype.stop = function() {

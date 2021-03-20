@@ -6,13 +6,14 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const rateLimit = require("express-rate-limit");
 const { SECRET_KEY } = require('../constants');
+const constants = require('../constants');
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10
 });
 
-if(process.env.NODE_ENV !== 'production') {
+if(process.env.NODE_ENV !== constants.env.PRODUCTION) {
   router.get('/nginx_status', function(req, res) {
     res.send(`Active connections: 0 
     server accepts handled requests
