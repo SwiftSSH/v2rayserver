@@ -24,6 +24,12 @@
                         <a-card hoverable style="margin-bottom: 20px;">
                             <div slot="title">
                                 <a-button type="primary" icon="plus" @click="openAddInbound"></a-button>
+                                <a-radio-group default-value="all" @change="onSelectFilter" :style="{ marginBottom: '8px' }">
+                                    <a-radio-button value="all">all</a-radio-button>
+                                    <a-radio-button value="online">online</a-radio-button>
+                                    <a-radio-button value="expired">expired</a-radio-button>
+                                    <a-radio-button value="barned">barned</a-radio-button>
+                                </a-radio-group>
                             </div>
                             <a-row>
                                 <a-input v-model="searchKey" placeholder="search" autofocus></a-input>
@@ -312,12 +318,13 @@
                                     </a-col>
                                 </a-row>
                                 <a-row>
-                                    <a-col :xs="24" :sm="24" :lg="12" v-if="item.lastAccessed || item.isOnline">
+                                    <a-col :xs="24" :sm="24" :lg="12">
                                         last accessed：
-                                        <a-tag color="blue">
+                                        <a-tag color="blue" v-if="item.lastAccessed || item.isOnline">
                                             <span v-if="item.lastAccessed && !item.isOnline">[[ getTimestamp(item.lastAccessed) ]]</span>
                                             <span v-if="item.isOnline">online</span>
                                         </a-tag>
+                                        <a-tag v-else color="green">not yet</a-tag>
                                     </a-col>
                                     <a-col v-if="item.maximum_ips && !item.isProxy" :xs="24" :sm="24" :lg="12">
                                         maximum ips：<a-tag color="green">[[ item.maximum_ips ]]</a-tag>
@@ -353,6 +360,31 @@
                 searchKey: '',
             },
             methods: {
+                onSelectFilter(e) {
+                    if(e.target.value == 'online') {
+                        //
+                    } else {
+                        this.searchedData = this.data.slice();
+                    }
+                },
+                searchInbounds2(key) {
+                    if (isEmpty(key)) {
+                        this.searchedData = this.data.slice();
+                    } else {
+                        this.searchedData.splice(0, this.searchedData.length);
+                        this.data.forEach(item => {
+                            let regex = new RegExp(`${key}`, "gi");
+                            try {
+                                const found = item.remark.match(regex) 
+                                || item.id.match(regex)
+                                || item.inboundId.match(regex);
+                                if (found) {
+                                    this.searchedData.push(item);
+                                }
+                            } catch(e) {}
+                        });
+                    }
+                },
                 getLoadbalancerinfo() {
                     get({
                         url: '/v2ray/info',
