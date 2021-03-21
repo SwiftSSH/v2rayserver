@@ -51,7 +51,8 @@ module.exports = {
     },
 
     getUsers() {
-        const { store } = require('./context');
+        const { store, instances } = require('./context');
+        let service = instances.get("v2rayService");
         return store.getUsers().map((user) => {
             let inbound = store.getInbound(user.inboundId);
             if(!inbound) return user;
@@ -66,7 +67,12 @@ module.exports = {
                 onDeleteTimestamp: user.onDeleteTimestamp,
                 up: user.up,
                 down: user.down,
-                status: user.status
+                status: user.status,
+                mult_conn_attempts: user.mult_conn_attempts || 0,
+                maximum_ips: user.maximum_ips,
+                lastAccessed: user.lastAccessed,
+                barned: user.barned,
+                isOnline: service.isUserOnline(user.id)
             });
         });
     },
@@ -101,31 +107,5 @@ module.exports = {
         || fs.readFileSync("./ngnix_config.ejs").toString()
     },
 
-    loadbalancerinfo() {
-        return new Promise(function (resolve, reject) {
-            request(`https://127.0.0.1/nginx_status`, function (error, response, body) {
-                if(error) {
-                    body = `Active connections: 0 
-                    server accepts handled requests
-                     0 0 0 
-                    Reading: 0 Writing: 0 Waiting: 0`;
-                }
-                try {
-                    const data = {};
-                    const lines = body.split('\n');
-                    data.activeConnections = Number(lines[0].split(' ')[2].trim());
-                    data.accepted = Number(lines[2].split(' ')[1].trim());
-                    data.handled = Number(lines[2].split(' ')[2].trim());
-                    data.total = Number(lines[2].split(' ')[3].trim());
-                    data.reading = Number(lines[3].split(' ')[1].trim());
-                    data.writing = Number(lines[3].split(' ')[3].trim());
-                    data.waiting = Number(lines[3].split(' ')[5].trim());
-                    resolve(data);
-                } catch (error) {
-                    reject()
-                }
-            });
-        });
-    },
     rePopulateNginxConfigFile(str, noReload) {}    
 }

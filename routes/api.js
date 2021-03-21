@@ -16,6 +16,7 @@ router.get('/me', function(req, res) {
 
 router.get('/me/users', function(req, res) {
     let users = [];
+    let service = context.instances.get("v2rayService");
     if(res.locals.user) {
         users = context.store.getUsersByAgentId(res.locals.user.id);
     } else if(res.locals.admin) {
@@ -23,9 +24,21 @@ router.get('/me/users', function(req, res) {
     }
     let uFinal = users.map((user) => {
         delete user.password;
+        user.isOnline = service.isUserOnline(user.id)
         return user;
     }); 
     res.json(uFinal);
+});
+
+router.get('/me/users/active', function(req, res) {
+    if(res.locals.user) {
+        let service = context.instances.get("v2rayService");
+        let users = context.store.getUsersByAgentId(res.locals.user.id);
+        res.json({ 
+            activeUsers: users.filter((user) => service.isUserOnline(user.id))
+            .map((user) => user.id)
+        });
+    }
 });
 
 router.post('/traffic/reset/:userId', async function(req, res) {

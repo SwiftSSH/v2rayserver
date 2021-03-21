@@ -6,6 +6,7 @@ const fs = require('fs');
 const context = require('./context');
 const utils = require("./utils");
 const extend = require('xtend');
+const moment = require('moment');
 const constants = require("./constants");
 
 function V2RAY({ v2rayPath, configPath, host, port, APIAddr, APIPort, ProxyFlag }) {
@@ -126,6 +127,43 @@ V2RAY.prototype.start = async function(freshStart) {
     this.restarting = false
     context.instances.set('v2rayService', this);
     context.data.set('v2rayVersion', await this.version());
+
+    this.onlineStatusInterval = setInterval(() => {
+        let clients = this.getClients();
+        var now = moment();
+        clients.forEach((client) => {
+            client.ips.forEach((ip, index) => {
+                let lastAccessed = moment(ip.timestamp);
+                var duration = moment.duration(now.diff(lastAccessed));
+                if(duration.asSeconds() >= 5) {
+                    let ips = [].concat(client.ips);
+                    ips.splice(index, 1);
+                    if(ips.length) {
+                        client.ips = ips;
+                        this.clients.set(client.userId, client);
+                    } else {
+                        context.store.updateUser(client.userId, { 
+                            lastAccessed: ip.timestamp
+                        });
+                        this.clients.delete(client.userId);   
+                    }
+                }
+            });
+        });
+    }, 5000);
+};
+
+V2RAY.prototype.isUserOnline = function(userId) {
+    return this.clients.has(userId);
+};
+
+V2RAY.prototype.getClients = function() {
+    let output = [];
+    this.clients.forEach((val, key) => {
+        val.userId = key;
+        output.push(val);
+    });
+    return output;
 };
 
 V2RAY.prototype.logger = function (logStr) {
@@ -136,7 +174,9 @@ V2RAY.prototype.logger = function (logStr) {
     .replace(/\]/g,"");
     
     let output = {
-        date: data[0], time: data[1],
+        date: data[0], 
+        time: data[1],
+        timestamp: moment(`${data[0]} ${data[1]}`, "YYYY/MM/DD hh:mm:ss"),
         status: data[3],
         source: {
             ip: data[2].split(':')[0],
@@ -160,21 +200,64 @@ V2RAY.prototype.logger = function (logStr) {
             output.accepted = false;
             this.accessLog(output);
         } else {
-            console.log(logStr)
+            console.log(logStr);
         }
     }
+    
+    context.store.updateRequestsCount(output.status);
 };
 
 V2RAY.prototype.accessLog = function(log) {
     if(process.env.NODE_ENV !== constants.env.PRODUCTION) console.log(log);
+    let data = { address: log.source.ip, timestamp: log.timestamp };
     if(log.tag !== 'api' && log.accepted){
-        if(log.target.protocol == constants.protocols.TCP) {
-            // if(!this.clients.has(log.tag)){
-            //     let client = this.clients.get(log.tag);
-            //     this.clients.set(log.tag, [].push(log.source.ip))
-            // } else {
-            //     this.clients.set(log.tag, [log.source.ip]);
-            // }
+        if(this.clients.has(log.tag)){
+            let client = this.clients.get(log.tag);
+            if(log.source.ip !== "127.0.0.1") {
+                let index = client.ips.findIndex((ip) => ip.address == log.source.ip);
+                if(index < 0) {
+                    client.ips.push(data);
+                } else {
+                    client.ips[index] = data;
+                } 
+            }
+            this.clients.set(log.tag, client);
+            this.handleConnections(log.tag);
+        } else {
+            this.clients.set(log.tag, {
+                ips: [data]
+            });
+        }
+    }
+};
+
+V2RAY.prototype.handleConnections = function(userId) {
+    let client = this.getClients()
+    .filter((c) => c.userId == userId)[0];
+    /** detect simultineous connection by one uuid */
+    if(client) {
+        let user = context.store.getUser(client.userId);
+        context.store.updateUser(client.userId, { 
+            lastAccessed: null
+        });
+        if(client.ips.length > user.maximum_ips && !user.barned) {
+            let lastAccessed = moment(client.ips[0].timestamp);
+            var duration = moment.duration(client.ips[1].timestamp.diff(lastAccessed));
+            if(duration.asSeconds() < 4) {
+                let mult_conn_attempts = user.mult_conn_attempts ? user.mult_conn_attempts + 1 : 1;
+                if(mult_conn_attempts <= constants.MAX_MULT_CONN_ATTEMPS) {
+                    context.store.updateUser(client.userId, {
+                        mult_conn_attempts
+                    });
+                } else {
+                    context.store.updateUser(client.userId, {
+                        status: constants.status.BARNED,
+                        barned: true,
+                        enable: false,
+                        lastAccessed
+                    });
+                }
+            }
         }
     }
 };
@@ -184,6 +267,7 @@ V2RAY.prototype.stop = function() {
         this.v2rayProc.kill();
         this.code = 1;
         this.restarting = false;
+        clearInterval(this.onlineStatusInterval);
         console.log("V2RAY service stopped");
     }
 };
@@ -231,6 +315,15 @@ V2RAY.prototype.getTraffic = function(type, tag, reset=false) {
     });
 
     return output;
+};
+
+V2RAY.prototype.startHostChecker = async function(v2RayConfig) {
+    this.v2rayProc = spawn(`${this.v2rayPath}/v2ray`, ["-config=stdin:", "-format", "json"]);
+    this.v2rayProc.stderr.on('data', (data) => console.log(`${data}`));
+    this.v2rayProc.stdout.on('data', (data) => console.log(`${data}`));
+    this.v2rayProc.stdin.write(JSON.stringify(v2RayConfig));
+    this.v2rayProc.stdin.end();
+    return this.v2rayProc;
 };
 
 V2RAY.prototype.testConnection = function (httpProxyPort, callback) {

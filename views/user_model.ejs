@@ -26,6 +26,10 @@
             </a-form-item>
         <% } %>
 
+        <a-form-item label="maximum IPs" v-if="!userModal.user.agent">
+            <a-input v-model.trim="userModal.user.maximum_ips" disabled="userModal.user.maximum_ips"></a-input>
+        </a-form-item>
+
         <a-form-item v-if="!userModal.user.agent" label="Expires (days)">
             <a-input v-model.trim="userModal.user.expires" type="number"></a-input>
         </a-form-item>
@@ -47,14 +51,19 @@
 <script>
 
     class UserModel {
-        constructor({ remark, inboundId, expires, maximum_users, username, agent, id, email, password, enable, protocol }) {
+        constructor({ 
+            remark, inboundId, expires, maximum_users,
+            username, agent, id, email, password, enable, protocol,
+            maximum_ips
+        }) {
             this.username = username;
-            this.remark = remark;
+            this.remark = remark || '🌐 SwiftSSH (' + (location.host.split(".")[0]).toUpperCase() + ')';
             this.inboundId = inboundId;
             this.email = email;
             this.password = password;
             this.expires = expires || 1;
             this.maximum_users = maximum_users || 5;
+            this.maximum_ips = maximum_ips || 1;
             this.enable = typeof enable !== 'boolean' ? true : enable;
             this.agent = agent;
             this.id = id;

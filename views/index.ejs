@@ -113,25 +113,49 @@
                             </a-tooltip>
                         </a-card>
                     </a-col>
-                    <template v-if="loadbalancerinfo">
+                    <template v-if="info">
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            total requests: [[ loadbalancerinfo.total ]]
+                            active connections / ips: [[ info.activeConnections ]] / [[ info.ips ]]
+                            <a-tooltip>
+                                <template slot="title">
+                                    The number of connections and ips for v2ray Service.
+                                </template>
+                                <a-icon type="question-circle" theme="filled"></a-icon>
+                            </a-tooltip>
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            active connections: [[ loadbalancerinfo.activeConnections ]]
+                            accepted: [[ info.requestsCount.accepted ]]
+                            <a-tooltip>
+                                <template slot="title">
+                                    The accepted requests by v2ray.
+                                </template>
+                                <a-icon type="question-circle" theme="filled"></a-icon>
+                            </a-tooltip>
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            reading / writing / waiting: [[ loadbalancerinfo.reading ]] / [[ loadbalancerinfo.writing ]] / [[ loadbalancerinfo.waiting ]]
+                            rejected / blocked : [[ info.requestsCount.rejected ]] / [[ info.requestsCount.blocked ]]
+                            <a-tooltip>
+                                <template slot="title">
+                                    The rejected and blocked requests by v2ray.
+                                </template>
+                                <a-icon type="question-circle" theme="filled"></a-icon>
+                            </a-tooltip>
                         </a-card>
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            handled / accepted: [[ loadbalancerinfo.handled ]] / [[ loadbalancerinfo.accepted ]]
+                            total requests: [[ info.requestsCount.total ]]
+                            <a-tooltip>
+                                <template slot="title">
+                                    The all requests by v2ray.
+                                </template>
+                                <a-icon type="question-circle" theme="filled"></a-icon>
+                            </a-tooltip>
                         </a-card>
                     </a-col>
                     </template>
@@ -238,7 +262,7 @@
             versionModal,
             spinning: false,
             loadingTip: 'loading',
-            loadbalancerinfo: { "activeConnections": 0, "accepted": 0,"handled": 0,"total": 0,"reading":0,"writing": 0,"waiting": 0}
+            info: {"requestsCount":{"rejected":0,"blocked":0,"accepted":0,"total":0},"ips":0,"activeConnections":0}
         },
         methods: {
             loading(spinning, tip = 'loading') {
@@ -247,20 +271,9 @@
             },
             getLoadbalancerinfo() {
                 get({
-                    url: '/nginx_status',
+                    url: '/v2ray/info',
                     success: body => {
-                        try {
-                            const data = {};
-                            const lines = body.split('\n');
-                            data.activeConnections = Number(lines[0].split(' ')[2].trim());
-                            data.accepted = Number(lines[2].split(' ')[1].trim());
-                            data.handled = Number(lines[2].split(' ')[2].trim());
-                            data.total = Number(lines[2].split(' ')[3].trim());
-                            data.reading = Number(lines[3].split(' ')[1].trim());
-                            data.writing = Number(lines[3].split(' ')[3].trim());
-                            data.waiting = Number(lines[3].split(' ')[5].trim());
-                            this.loadbalancerinfo = data;
-                        } catch(e) {}
+                        this.info = body;
                     }
                 });
             },

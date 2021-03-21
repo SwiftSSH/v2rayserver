@@ -17,14 +17,6 @@ router.get('/status', async function (req, res) {
   res.json(context.data.get("server_info"));
 });
 
-router.get('/loadbalancerinfo', function (req, res) {
-  utils.loadbalancerinfo()
-  .then((inf) => res.json(inf))
-  .catch(() => {
-    res.json({ success: false })
-  });
-});
-
 router.get('/settings', function(req, res) {
   res.json(utils.getSettings(true));
 });

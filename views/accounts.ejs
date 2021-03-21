@@ -45,6 +45,16 @@
                                     <a-tag color="green">[[ users.length ]]</a-tag>
                                 </a-col>
                             </a-row>
+                            <a-row>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    number of active users：
+                                    <a-tag color="green">[[ connInfo.activeConnections ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    number of active ips：
+                                    <a-tag color="green">[[ connInfo.ips ]]</a-tag>
+                                </a-col>
+                            </a-row>
                         </a-card>
                     </transition>
                     <a-card v-if="data.length === 0">
@@ -300,8 +310,25 @@
                                         deletes：
                                         <a-tag color="green">[[ getTimestamp(item.onDeleteTimestamp) ]]</a-tag>
                                     </a-col>
+                                </a-row>
+                                <a-row>
+                                    <a-col :xs="24" :sm="24" :lg="12" v-if="item.lastAccessed || item.isOnline">
+                                        last accessed：
+                                        <a-tag color="blue">
+                                            <span v-if="item.lastAccessed && !item.isOnline">[[ getTimestamp(item.lastAccessed) ]]</span>
+                                            <span v-if="item.isOnline">online</span>
+                                        </a-tag>
+                                    </a-col>
+                                    <a-col v-if="item.maximum_ips && !item.isProxy" :xs="24" :sm="24" :lg="12">
+                                        maximum ips：<a-tag color="green">[[ item.maximum_ips ]]</a-tag>
+                                    </a-col>
+                                </a-row>
+                                <a-row>
                                     <a-col v-if="item.status" :xs="24" :sm="24" :lg="12">
-                                        status：<a-tag color="green">[[ item.status ]]</a-tag>
+                                        status：<a-tag color="red" @click="unBarnUser(item.id)">[[ item.status ]]</a-tag>
+                                    </a-col>
+                                    <a-col v-if="item.mult_conn_attempts" :xs="24" :sm="24" :lg="12">
+                                        multple connection attempts <a-tag color="green">([[ item.mult_conn_attempts ]])</a-tag>
                                     </a-col>
                                 </a-row>
                             </div>
@@ -320,11 +347,27 @@
                 spinning: false,
                 inbounds: [],
                 users: [],
+                connInfo: {"requestsCount":{"rejected":0,"blocked":0,"accepted":0,"total":0},"ips":0,"activeConnections":0},
                 data: [],
                 searchedData: [],
                 searchKey: '',
             },
             methods: {
+                getLoadbalancerinfo() {
+                    get({
+                        url: '/v2ray/info',
+                        success: body => {
+                            this.connInfo = body;
+                            this.data.forEach((user, index) => {
+                                if(body.clients.indexOf(user.id) >=0 && !user.isProxy) {
+                                    this.data[index].isOnline = true; 
+                                } else {
+                                    this.data[index].isOnline = false; 
+                                }
+                            });
+                        }
+                    });
+                },
                 loading(spinning=true) {
                     this.spinning = spinning;
                 },
@@ -385,6 +428,11 @@
                         inb.expires = user.expires;
                         inb.enable = user.enable;
                         inb.status = user.status;
+                        inb.mult_conn_attempts = user.mult_conn_attempts;
+                        inb.maximum_ips = user.maximum_ips;
+                        inb.lastAccessed = user.lastAccessed;
+                        inb.isOnline = user.isOnline;
+                        inb.barned = user.barned;
                         return inb;
                     }).reverse();
                 },
@@ -449,8 +497,8 @@
                         protocol: inbound.protocol,
                         confirm: () => {
                             adduserModal.loading();
-                            let { remark, expires, email, enable, inboundId } = adduserModal.inbound;
-                            let data = { remark, expires, email, enable, inboundId };
+                            let { remark, expires, maximum_ips, enable, inboundId } = adduserModal.inbound;
+                            let data = { remark, expires, maximum_ips, enable, inboundId };
                             if(Protocols.VMESS === inbound.protocol) {
                                 data.id = adduserModal.inbound.settings.vmesses[0].id;
                                 data.alterId = adduserModal.inbound.settings.vmesses[0].alterId;
@@ -504,6 +552,15 @@
                         onOk: () => this.submit('/v2ray/inbound' + (inbound.isProxy ? '/del': '/del/user') +'/' + inbound.id)
                     });
                 },
+                unBarnUser(userId) {
+                    this.$confirm({
+                        title: 'Attention',
+                        content: 'User exceeded maximum ips per connection and was barned. confirm unblock?',
+                        okText: 'ok',
+                        cancelText: 'cancel',
+                        onOk: () => this.submit('/v2ray/inbound/unbarn/user/' + userId)
+                    });
+                },
                 resetTraffic(inbound) {
                     this.submit((inbound.isProxy ? '/v2ray/reset_traffic/': '/api/traffic/reset/')  + inbound.id);
                 },
@@ -541,6 +598,7 @@
             },
             mounted() {
                 this.setData(JSON.parse('<%- inbounds %>'), JSON.parse('<%- users %>'));
+                setInterval(this.getLoadbalancerinfo, 2000);
             },
             computed: {
                 total() {

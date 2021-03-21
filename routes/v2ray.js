@@ -3,6 +3,7 @@ const router = express.Router();
 const utils = require("../utils");
 const context = require('../context');
 const extend = require("xtend");
+const constants = require('../constants');
 
 let adminCheck = function(req, res, next) {
     if(res.locals.admin) {
@@ -10,6 +11,18 @@ let adminCheck = function(req, res, next) {
     }
     res.send({ success: false, msg: "Authentication Error" })
 };
+
+router.get('/info', adminCheck, function (req, res) {
+    let service = context.instances.get("v2rayService");
+    let connections = service ? service.getClients() : [];
+    res.json(extend(context.store.getRequestsInfo(), {
+        ips: connections.map((connection) => {
+            return connection.ips.length;
+        }).reduce((a, b) => a + b, 0),
+        activeConnections: connections.length,
+        clients: connections.map((connection) => connection.userId)
+    }));
+});
 
 router.get('/inbounds', adminCheck, function(req, res) {
     res.json(context.store.getInbounds());
@@ -47,6 +60,7 @@ router.post('/inbound/add', JsonBody, adminCheck, function(req, res) {
 
 router.post('/inbound/add/user/:in_id', JsonBody, async function(req, res) {
     let user = extend(req.body, {
+        maximum_ips: (req.body.maximum_ips && res.locals.admin) ? req.body.maximum_ips : constants.MAX_IPS_PER_USER,
         agent: (req.body.agent && res.locals.admin)
     });
 
@@ -72,6 +86,12 @@ router.post('/inbound/add/user/:in_id', JsonBody, async function(req, res) {
 });
 
 router.post('/inbound/update/user/:uid', JsonBody, async function(req, res) {
+    if(!res.locals.admin) {
+        delete req.body.maximum_ips;
+        delete req.body.barned;
+        delete req.body.status,
+        delete req.body.mult_conn_attempts;
+    }
     let success = await context.store.updateUser(req.params.uid, req.body);
     return res.json({ msg: success ? 'user successfully updated': 'Failed to update user', success });
 });
@@ -79,6 +99,11 @@ router.post('/inbound/update/user/:uid', JsonBody, async function(req, res) {
 router.post('/inbound/del/user/:uid', function(req, res) {
     let success = context.store.removeUser(req.params.uid);
     return res.json({ msg: success ? 'Successfully deleted': 'Failed to delete user', success });
+});
+
+router.post('/inbound/unbarn/user/:uid', adminCheck, async function(req, res) {
+    let success = await context.store.unBarnUser(req.params.uid);
+    return res.json({ msg: success ? 'Successfully unblocked user': 'Failed to unblock user', success });
 });
 
 router.post('/inbound/update/:in_id', JsonBody, adminCheck, function(req, res) {

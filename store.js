@@ -15,11 +15,38 @@ function Store() {
     this.nginxConfig = "nginxConfig";
     this.settings = "settings";
     this.serverDetails = "details";
-    setInterval(() => {
+    this.requestsInfo = "requests_info";
+    this.jobInterval = setInterval(() => {
         this.handleExpiredAccounts();
         this.updateTraffic();
     }, (6 * 1000) * 10);
 }
+
+Store.prototype.updateRequestsCount = function(key, value=1) {
+    let scheme = [
+        constants.REQUESTS_STATUS.ACCEPTED,
+        constants.REQUESTS_STATUS.REJECTED,
+        constants.REQUESTS_STATUS.BLOCKED
+    ];
+    if(scheme.indexOf(key) >=0) {
+        let info = this.getRequestsInfo();
+        info.requestsCount[key] += value;
+        info.requestsCount.total = scheme.map((_key) => info.requestsCount[_key])
+        .reduce((a, b) => a + b, 0);
+        config.set(`${this.requestsInfo}`, info);
+    }
+};
+
+Store.prototype.getRequestsInfo = function() {
+    return config.get(`${this.requestsInfo}`) || {
+        requestsCount: {
+            rejected: 0, 
+            blocked: 0,
+            accepted: 0,
+            total: 0
+        }
+    };
+};
 
 Store.prototype.updateTraffic = function () {
     function getTraffic(type, tag) {
@@ -167,12 +194,25 @@ Store.prototype.proxyRemoveUser = function (inboundId, userId) {
     });
 };
 
-Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
+Store.prototype.unBarnUser = async function(emailOrId) {
+    return await this.updateUser(emailOrId, {
+        enable: true,
+        barned: false,
+        status: null,
+        mult_conn_attempts: 0
+    }, false, true);
+};
+
+Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false, byForce=false) {
     let user = this.getUser(emailOrId);
     // prevent agent to user switch
     delete data.agent;
     let proxyUserAdded = false;
     if(user) {
+        if(user.barned && !byForce) {
+            // only admin will unbarn
+            return false;
+        }
         function resetTimeout(timeout) {
             delete user.status;
             delete user.onDeleteTimestamp;
@@ -185,9 +225,11 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false) {
                     if(user.status == constants.status.TIMEOUT) {
                         resetTimeout(data.expires && data.expires !== user.expires ? data.expires : user.expires);
                         data.enable = true;
+                    } else if(user.status == constants.status.BARNED) {
+                        delete user.status;
                     }
                     this.proxyAddUser(user); 
-                    proxyUserAdded = true
+                    proxyUserAdded = true;
                 } else if(!data.enable && user.enable) {
                     this.proxyRemoveUser(user.inboundId, user.id);
                     refresh = false;
@@ -318,7 +360,7 @@ Store.prototype.getInbounds = function (onlyEnabled=false) {
         let users = this.getUsersByInboundId(inbound.id);
         let field = this.getField(inbound.protocol);
         if(onlyEnabled) 
-            users = users.filter((user) => user.enable);
+            users = users.filter((user) => user.enable && !user.barned);
         inbound.settings[field] = users;
         return inbound;
     });

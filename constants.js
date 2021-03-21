@@ -1,4 +1,6 @@
 module.exports = Object.freeze({
+    MAX_MULT_CONN_ATTEMPS: 10,
+    MAX_IPS_PER_USER: 1,
     protocols: {
         VMESS: 'vmess',
         VLESS: 'vless',
@@ -14,6 +16,11 @@ module.exports = Object.freeze({
     SECRET_KEY: "VGGVknJ6z21gEyKIUFaz7mJ0P2fzaWIL",
     security: {
         TLS: 'tls'
+    },
+    REQUESTS_STATUS: {
+        REJECTED: 'rejected', 
+        BLOCKED: 'blocked',
+        ACCEPTED: 'accepted'
     },
     status: {
         TIMEOUT: 'timeout',

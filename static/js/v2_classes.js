@@ -534,10 +534,11 @@ class Inbound extends V2CommonClass {
                 streamSettings=new StreamSettings(),
                 tag='',
                 sniffing=new Sniffing(),
-                remark='🌐 Safe Internet (' + (location.host.split(".")[0]).toUpperCase() + ')',
+                remark='🌐 SwiftSSH (' + (location.host.split(".")[0]).toUpperCase() + ')',
                 enable=true,
                 expires = '1 day',
                 maximum_users = 5,
+                maximum_ips = 1,
                 inboundId = null
                 ) {
         super();
@@ -553,6 +554,7 @@ class Inbound extends V2CommonClass {
         this.enable = enable;
         this.inboundId = inboundId;
         this.maximum_users = maximum_users;
+        this.maximum_ips = maximum_ips;
     }
 
     reset() {

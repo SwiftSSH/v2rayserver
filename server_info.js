@@ -26,7 +26,7 @@ const handler = (socket) => {
     let info = extend(data, {
       v2: {
         code: v2rayService ? v2rayService.code : 0, 
-        message: v2rayService ? v2rayService.message.replace(/\"/g, "") : ""
+        message: v2rayService ? v2rayService.message.replace(/\"/g, "") : "",
       }
     });
     

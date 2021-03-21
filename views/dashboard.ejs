@@ -33,7 +33,11 @@
                                     total traffic： <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
-                                    accounts： <a-tag color="blue">[[ users.length ]]/[[ me.inbound.maximum_users ]]</a-tag>
+                                    users： <a-tag color="blue">[[ users.length ]]/[[ me.inbound.maximum_users ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    active users：
+                                    <a-tag color="green">[[ connInfo.activeConnections ]]</a-tag>
                                 </a-col>
                             <% } %>
                             </a-col>
@@ -73,12 +77,14 @@
                                 <% } %> 
                             </a-row>
                             <a-row>
-                                <a-col :xs="24" :sm="24" :lg="12">
+                                <a-col :xs="24" :sm="24" :lg="12" v-if="user.username">
                                     username： [[ user.username ]]
                                 </a-col>
-                                <a-col v-if="user.email" :xs="24" :sm="24" :lg="12">
-                                    email： [[ user.email ]]
-                                </a-col>
+                                <% if (admin) { %>
+                                    <a-col v-if="user.email" :xs="24" :sm="24" :lg="12">
+                                        email： [[ user.email ]]
+                                    </a-col>
+                                <% } %> 
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     upload / download：
                                     <a-tag color="green">[[ sizeFormat(user.up) ]] / [[ sizeFormat(user.down) ]]</a-tag>
@@ -96,11 +102,9 @@
                                         accounts： <a-tag color="green">[[ user.total_users_added ]]/[[ user.maximum_users ]]</a-tag>
                                     </a-col>
                                 <% } %> 
-                                <% if (!admin) { %>
-                                    <a-col :xs="24" :sm="24" :lg="12">
-                                        expires： <a-tag color="green">[[ getTimestamp(user.timestamp) ]]</a-tag>
-                                    </a-col>
-                                <% } %> 
+                                <a-col :xs="24" :sm="24" :lg="12" v-if="user.timestamp">
+                                    expires： <a-tag color="green">[[ getTimestamp(user.timestamp) ]]</a-tag>
+                                </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     enable：
                                     <a-popconfirm :title="user.enable ? 'Whether to disable' : 'Whether to enable'"
@@ -109,6 +113,26 @@
                                         <a-tag v-if="user.enable" color="green">yes</a-tag>
                                         <a-tag v-else color="red">no</a-tag>
                                     </a-popconfirm>
+                                </a-col>
+                            </a-row>
+                            <a-row>
+                                <a-col v-if="user.maximum_ips && !user.agent" :xs="24" :sm="24" :lg="12">
+                                    maximum ips：<a-tag color="green">[[ user.maximum_ips ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12" v-if="user.lastAccessed || user.isOnline">
+                                    last accessed：
+                                    <a-tag color="blue">
+                                        <span v-if="user.lastAccessed && !user.isOnline">[[ getTimestamp(user.lastAccessed) ]]</span>
+                                        <span v-if="user.isOnline">online</span>
+                                    </a-tag>
+                                </a-col>
+                            </a-row>
+                            <a-row>
+                                <a-col v-if="user.status" :xs="24" :sm="24" :lg="12">
+                                    status：<a-tag color="red">[[ user.status ]]</a-tag>
+                                </a-col>
+                                <a-col v-if="user.mult_conn_attempts" :xs="24" :sm="24" :lg="12">
+                                    multple connection attempts <a-tag color="green">([[ user.mult_conn_attempts ]])</a-tag>
                                 </a-col>
                             </a-row>
                         </div>
@@ -143,10 +167,9 @@
             users: [],
             searchedData: [],
             me: {
-                inbound: {
-                    maximum_users: 0
-                }
+                inbound: { maximum_users: 0 }
             },
+            connInfo: { activeConnections: 0 },
             searchKey: '',
             size: 'small',
         },
@@ -171,6 +194,21 @@
                 let data = { enable: enable };
                 this.submit('/v2ray/inbound/update/user/'+ userId, data);
             },
+            getStats() {
+                get({
+                    url: '/api/me/users/active',
+                    success: body => {
+                        this.connInfo.activeConnections = body.activeUsers.length;
+                        this.users.forEach((user, index) => {
+                            if(body.activeUsers.indexOf(user.id) >=0) {
+                                this.users[index].isOnline = true; 
+                            } else {
+                                this.users[index].isOnline = false; 
+                            }
+                        });
+                    }
+                });
+            },
             getMe() {
                 get({
                     url: '/api/me',
@@ -185,6 +223,7 @@
                     url: '/api/me/users',
                     success: data => {
                         this.users = data;
+                        this.connInfo.activeConnections = data.filter((user) => user.isOnline).length;
                         this.searchUsers();
                         this.loading(false);
                     },
@@ -252,8 +291,9 @@
         mounted() {
             if(!JSON.parse('<%- admin %>')) {
                 this.getMe();
-            }
-            this.getUsers()
+                setInterval(this.getStats, 2000);
+            } 
+            this.getUsers();
         },
         computed: {
             total() {
