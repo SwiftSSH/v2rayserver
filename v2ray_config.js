@@ -35,7 +35,7 @@ module.exports = {
     },
     {
       "protocol": "vmess",
-      "port": "10000-60000",
+      "port": "40000-60000",
       "tag": "dynamicPort",  
       "settings": {
         "default": {

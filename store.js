@@ -16,10 +16,11 @@ function Store() {
     this.settings = "settings";
     this.serverDetails = "details";
     this.requestsInfo = "requests_info";
-    this.jobInterval = setInterval(() => {
-        this.handleExpiredAccounts();
-        this.updateTraffic();
-    }, 5000);
+    this.routingRules = "routing_rules";
+    // this.jobInterval = setInterval(() => {
+    //     this.handleExpiredAccounts();
+    //     this.updateTraffic();
+    // }, 5000);
 }
 
 Store.prototype.updateRequestsCount = function(key, value=1) {
@@ -37,6 +38,17 @@ Store.prototype.updateRequestsCount = function(key, value=1) {
     }
 };
 
+Store.prototype.resetRequestsInfo = function() {
+    let info = this.getRequestsInfo();
+    info.requestsCount = {
+        rejected: 0, 
+        blocked: 0,
+        accepted: 0,
+        total: 0
+    };
+    config.set(`${this.requestsInfo}`, info);
+};
+
 Store.prototype.getRequestsInfo = function() {
     return config.get(`${this.requestsInfo}`) || {
         requestsCount: {
@@ -46,6 +58,34 @@ Store.prototype.getRequestsInfo = function() {
             total: 0
         }
     };
+};
+
+Store.prototype.getRoutingRules = function () {
+    ret
+    return config.get(this.routingRules) || [];
+};
+
+Store.prototype.addRoutingRule = function (data, refresh=false) {
+    let rules = this.getRoutingRules();
+    let values = data.value.toString().split(',');
+    let rule = {
+        [data.tag]: data.tagValue,
+        type: data.type,
+        [data.field]: values,
+        enable: data.enable,
+        remark: data.remark
+    };
+    let sameIndex = rules.findIndex((r) => 
+        (r[data.tag] == data.tagValue && r.type == data.type) && r.hasOwnProperty(data.field)
+    );
+    if(sameIndex >=0) {
+        let newValues = rules[sameIndex][data.field].concat(values);
+        rules[sameIndex][data.field] = [...new Set(newValues)];
+    } else {
+        rules.push(rule);
+    }
+    config.set(this.routingRules, rules);
+    if(refresh) this.restart();
 };
 
 Store.prototype.updateTraffic = function () {

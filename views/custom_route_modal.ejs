@@ -1,0 +1,84 @@
+<a-modal id="rule-modal" v-model="rulesModal.visible" :title="rulesModal.title" @ok="rulesModal.ok"
+         :confirm-loading="rulesModal.confirmLoading" :closable="true" :mask-closable="false"
+         :ok-text="rulesModal.okText" cancel-text="close">
+    <a-form layout="inline">
+        <a-form-item label="remark">
+            <a-input class="input-size" v-model.trim="rulesModal.rule.remark"></a-input>
+        </a-form-item>
+        <a-form-item label="type">
+            <a-input class="input-size" v-model.trim="rulesModal.rule.type"></a-input>
+        </a-form-item>
+        <a-form-item label="tag">
+            <a-input class="input-size" v-model.trim="rulesModal.rule.tag"></a-input>
+        </a-form-item>
+        <a-form-item label="tag value">
+            <a-input class="input-size" v-model.trim="rulesModal.rule.tagValue"></a-input>
+        </a-form-item>
+        <a-form-item label="field">
+            <a-input class="input-size" v-model.trim="rulesModal.rule.field"></a-input>
+        </a-form-item>
+        <a-form-item label="value">
+            <a-input class="input-size" style="width: 290px; height: 72px;" v-model.trim="rulesModal.rule.value" type="textarea"></a-input>
+        </a-form-item>
+        <a-form-item label="enable">
+            <a-switch v-model="rulesModal.rule.enable"></a-switch>
+        </a-form-item>
+        <a-form-item label="refresh">
+            <a-switch v-model="rulesModal.rule.refresh"></a-switch>
+        </a-form-item>
+    </a-form>
+</a-modal>
+<script>
+
+    class RuleModel {
+        constructor({ tag, tagValue, type, enable, remark, field, value, refresh }) {
+            this.tag = tag || "outboundTag";
+            this.tagValue = tagValue || "blocked";
+            this.type = type || "field";
+            this.field = field || 'ip';
+            this.value = value;
+            this.refresh = refresh;
+            this.remark = remark;
+            this.enable = typeof enable == 'boolean' ? enable : true;
+        }
+    }
+
+    const rulesModal = {
+        title: '',
+        visible: false,
+        confirmLoading: false,
+        okText: 'confirm',
+        confirm: null,
+        rule: new RuleModel({}),
+        ok() {
+            execute(rulesModal.confirm);
+        },
+        show({ title='', okText='confirm', rule={}, confirm=()=>{} }) {
+            this.title = title;
+            this.okText = okText;
+            this.rule = new RuleModel(rule);
+            this.confirm = confirm;
+            this.visible = true;
+        },
+        close() {
+            rulesModal.visible = false;
+            rulesModal.closeLoading();
+        },
+        loading() {
+            rulesModal.confirmLoading = true;
+        },
+        closeLoading() {
+            rulesModal.confirmLoading = false;
+        }
+    };
+
+    new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#rule-modal',
+        data: {
+            rulesModal: rulesModal
+        },
+        methods: {}
+    });
+
+</script>

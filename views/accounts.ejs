@@ -523,9 +523,10 @@
                         this.data.forEach(item => {
                             let regex = new RegExp(`${key}`, "gi");
                             try {
-                                const found = item.remark.match(regex) 
+                                const found = item.remark.match(regex)
+                                || item.port.toString().match(regex)
                                 || item.id.match(regex)
-                                || item.inboundId.match(regex);
+                                || item.inboundId.match(regex)
                                 if (found) {
                                     this.searchedData.push(item);
                                 }

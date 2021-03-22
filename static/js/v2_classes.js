@@ -527,7 +527,7 @@ class Sniffing extends V2CommonClass {
 }
 
 class Inbound extends V2CommonClass {
-    constructor(port=randomIntRange(10000, 60000),
+    constructor(port=randomIntRange(10000, 30000),
                 listen='127.0.0.1',
                 protocol=Protocols.VMESS,
                 settings=null,

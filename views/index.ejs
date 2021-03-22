@@ -149,7 +149,12 @@
                     </a-col>
                     <a-col :sm="24" :md="12">
                         <a-card hoverable>
-                            total requests: [[ info.requestsCount.total ]]
+                            total requests: 
+                            <a-popconfirm title="Are you sure you want to reset requests?"
+                                @confirm="resetRequests"
+                                ok-text="confirm" cancel-text="cancel">
+                                <span>[[ info.requestsCount.total ]]</span>
+                            </a-popconfirm>
                             <a-tooltip>
                                 <template slot="title">
                                     The all requests by v2ray.
@@ -265,6 +270,13 @@
             info: {"requestsCount":{"rejected":0,"blocked":0,"accepted":0,"total":0},"ips":0,"activeConnections":0}
         },
         methods: {
+            resetRequests(){
+                post({
+                    url: '/v2ray/reset_requests',
+                    data: {},
+                    success: data => {}
+                });
+            },
             loading(spinning, tip = 'loading') {
                 this.spinning = spinning;
                 this.loadingTip = tip;

@@ -146,4 +146,23 @@ router.post('/reset_all_traffic', JsonBody, adminCheck, function(req, res) {
     res.json({ msg: 'Reset traffic successfully', success: true })
 });
 
+router.post('/reset_requests', JsonBody, adminCheck, function(req, res) {
+    context.store.resetRequestsInfo();
+    res.json({ msg: 'Reset requests successfully', success: true })
+});
+
+router.get('/routing/rules', adminCheck, function(req, res) {
+    res.json(context.store.getRoutingRules());
+});
+
+router.post('/routing/add', JsonBody, adminCheck, function(req, res) {
+    context.store.addRoutingRule(req.body, req.body.refresh);
+    res.json({ msg: 'Rule added successfully', success: true })
+});
+
+router.post('/routing/update', JsonBody, adminCheck, function(req, res) {
+    console.log(req.body)
+    res.json({ msg: 'Rule updated successfully', success: true })
+});
+
 module.exports = router;
