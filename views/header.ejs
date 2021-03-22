@@ -1,4 +1,4 @@
-<a-layout-header :style="{ position: 'fixed', zIndex: 1, width: '100%'}">
+<a-layout-header :style="{ position: 'fixed', zIndex: 7, width: '100%'}">
     <!-- <div class="logo">SwiftSSH</div> -->
     <a-menu
       theme="dark"
@@ -8,15 +8,15 @@
       @click="({key}) => key.startsWith('http') ? window.open(key) : location.href = key"
     >
       <a-menu-item key="/">
-        V2ray
+        SwiftSSH
       </a-menu-item>
-      <a-menu-item key="/servers">
+      <!-- <a-menu-item key="/servers">
         SSH/SSL
-      </a-menu-item>
+      </a-menu-item> -->
       <% if (!admin) { %>
-          <a-menu-item style="float: right; margin-left: 0px;" key="/logout">
-              <a-icon type="logout"></a-icon>
-          </a-menu-item>
+        <a-menu-item style="float: right; margin-left: 0px;" key="/logout">
+          <a-icon type="logout"></a-icon>
+        </a-menu-item>
       <% } %> 
     </a-menu>
 </a-layout-header>

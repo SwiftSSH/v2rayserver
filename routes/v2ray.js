@@ -67,6 +67,10 @@ router.post('/inbound/add/user/:in_id', JsonBody, async function(req, res) {
     if(res.locals.user) {
         user.agentId = res.locals.user.id;
         user.inboundId = res.locals.user.inboundId;
+        let agent = context.store.getUser(user.agentId);
+        if(agent.status == constants.status.TIMEOUT) {
+            return res.json({ msg: "Subscription timeout", success: false });
+        }
     } else {
         user.inboundId = req.body.inboundId || req.params.in_id.toLowerCase();
     }
@@ -86,17 +90,33 @@ router.post('/inbound/add/user/:in_id', JsonBody, async function(req, res) {
 });
 
 router.post('/inbound/update/user/:uid', JsonBody, async function(req, res) {
-    if(!res.locals.admin) {
+    if(res.locals.user) {
         delete req.body.maximum_ips;
         delete req.body.barned;
         delete req.body.status,
         delete req.body.mult_conn_attempts;
+        let agent = context.store.getUser(res.locals.user.id, true);
+        if(agent.status == constants.status.TIMEOUT) {
+            return res.json({ msg: "Subscription timeout", success: false });
+        }
+    } else {
+        let agent = context.store.getUser(req.params.uid, true);
+        if(agent && req.body.expires !== agent.expires && agent.onDeleteTimestamp) {
+            await context.store.renewSub(req.params.uid, req.body);
+            return res.json({ msg: 'successfully updated subscription', success: true });
+        }
     }
     let success = await context.store.updateUser(req.params.uid, req.body);
     return res.json({ msg: success ? 'user successfully updated': 'Failed to update user', success });
 });
 
 router.post('/inbound/del/user/:uid', function(req, res) {
+    if(res.locals.user) {
+        let users = context.store.getUsersByAgentId(res.locals.user.id);
+        if(users.findIndex((user) => user.id == req.params.uid) < 0) {
+            return res.json({ msg: 'user not found', success: false });
+        }
+    }
     let success = context.store.removeUser(req.params.uid);
     return res.json({ msg: success ? 'Successfully deleted': 'Failed to delete user', success });
 });

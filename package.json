@@ -31,6 +31,7 @@
     "express": "^4.17.1",
     "express-ejs-extend": "0.0.1",
     "express-rate-limit": "^5.2.6",
+    "geoip-country": "^4.0.60",
     "https-proxy-agent": "^5.0.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.20",

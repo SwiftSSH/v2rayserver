@@ -15,6 +15,11 @@
                     <a-card hoverable style="margin-bottom: 20px;">
                         <div slot="title">
                             <a-button type="primary" icon="plus" @click="openUser()"></a-button>
+                            <a-radio-group default-value="all" @change="filterUsers" :style="{ marginBottom: '8px', float: 'right' }">
+                                <a-radio-button value="all">all</a-radio-button>
+                                <a-radio-button value="expired">expired</a-radio-button>
+                                <a-radio-button value="barned">barned</a-radio-button>
+                            </a-radio-group>
                         </div>
                         <a-row>
                             <a-input v-model="searchKey" placeholder="search" autofocus></a-input>
@@ -39,14 +44,26 @@
                                     active users：
                                     <a-tag color="green">[[ connInfo.activeConnections ]]</a-tag>
                                 </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12" v-if="!me.onDeleteTimestamp">
+                                    subscription expires：
+                                    <a-tag color="green">[[ getTimestamp(me.timestamp) ]]</a-tag>
+                                </a-col>
                             <% } %>
                             </a-col>
                         </a-row>
                     </a-card>
                 </transition>
-                <a-card v-if="users.length === 0">
-                    No users yet
+
+                <a-card v-if="me.onDeleteTimestamp" style="margin-bottom: 20px;">
+                    your subscription has expired, users will be deleted 
+                    <a-tag color="blue">[[ getTimestamp(me.onDeleteTimestamp) ]]</a-tag>if you delay to renew.
+                    please contact <a href="https://t.me/paulgrammer" target="blank">admin</a> for more information.
                 </a-card>
+
+                <a-card v-if="searchedData.length === 0 && !me.onDeleteTimestamp">
+                    No users
+                </a-card>
+
                 <transition-group tag="div" name="list">
                     <a-card v-for="user in searchedData" :key="user.id" hoverable style="margin-bottom: 20px;">
                         <div slot="title">
@@ -105,6 +122,10 @@
                                 <a-col :xs="24" :sm="24" :lg="12" v-if="user.timestamp">
                                     expires： <a-tag color="green">[[ getTimestamp(user.timestamp) ]]</a-tag>
                                 </a-col>
+                                <a-col v-if="user.onDeleteTimestamp" :xs="24" :sm="24" :lg="12">
+                                    deletes：
+                                    <a-tag color="green">[[ getTimestamp(user.onDeleteTimestamp) ]]</a-tag>
+                                </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     enable：
                                     <a-popconfirm :title="user.enable ? 'Whether to disable' : 'Whether to enable'"
@@ -130,6 +151,13 @@
                             <a-row>
                                 <a-col v-if="user.status" :xs="24" :sm="24" :lg="12">
                                     status：<a-tag color="red">[[ user.status ]]</a-tag>
+                                    <% if (admin) { %>
+                                        <a-popconfirm title="Are you sure you want to renew subscription ?"
+                                                        @confirm="renewSub(user)"
+                                                        ok-text="confirm" cancel-text="cancel">
+                                            <a-tag color="green">renew</a-tag>
+                                        </a-popconfirm>
+                                    <% } %> 
                                 </a-col>
                                 <a-col v-if="user.mult_conn_attempts" :xs="24" :sm="24" :lg="12">
                                     multple connection attempts <a-tag color="green">([[ user.mult_conn_attempts ]])</a-tag>
@@ -172,6 +200,7 @@
             connInfo: { activeConnections: 0 },
             searchKey: '',
             size: 'small',
+            currentCategory: 'all' 
         },
         methods: {
             genLink(user){
@@ -190,9 +219,29 @@
             loading(spinning=true) {
                 this.spinning = spinning;
             },
+            renewSub(data){
+                this.submit('/api/user/subscription/renew/'+ data.id, data);
+            },
             setEnable(userId, enable) {
                 let data = { enable: enable };
                 this.submit('/v2ray/inbound/update/user/'+ userId, data);
+            },
+            filterUsers(e) {
+                this.loadfiltered(e.target.value);
+            },
+            loadfiltered(category) {
+                this.searchedData.splice(0, this.searchedData.length);
+                this.currentCategory = category;
+                if(category == 'online') {
+                    this.searchedData = this.users.filter((user) => user.isOnline);
+                } else if(category == 'barned') {
+                     this.searchedData = this.users.filter((user) => user.status == 'barned');
+                } else if(category == 'expired') {
+                    this.searchedData = this.users.filter((user) => user.status == 'timeout');
+                } else {
+                    this.currentCategory = 'all';
+                    this.searchedData = this.users.slice();
+                }
             },
             getStats() {
                 get({

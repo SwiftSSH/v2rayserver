@@ -1,5 +1,5 @@
 module.exports = Object.freeze({
-    MAX_MULT_CONN_ATTEMPS: 100,
+    MAX_MULT_CONN_ATTEMPS: 50,
     MAX_IPS_PER_USER: 1,
     protocols: {
         VMESS: 'vmess',
@@ -24,6 +24,7 @@ module.exports = Object.freeze({
     },
     status: {
         TIMEOUT: 'timeout',
+        AGENT_TIMEOUT: 'agent timeout',
         BARNED: "barned"
     },
     env: {

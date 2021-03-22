@@ -2,9 +2,19 @@ const express = require('express');
 const router = express.Router();
 const context = require('../context');
 
+let adminCheck = function(req, res, next) {
+    if(res.locals.admin) {
+      return next();
+    }
+    res.send({ success: false, msg: "Authentication Error" })
+};
+
 router.get('/me', function(req, res) {
     let user = res.locals.user || {};
     if(res.locals.user) {
+        let agent = context.store.getUser(res.locals.user.id, true);
+        user.onDeleteTimestamp = agent.onDeleteTimestamp;
+        user.timestamp = agent.timestamp;
         user.inbound = { maximum_users: 0 };
         let inbound = context.store.getInbound(res.locals.user.inboundId);
         if(inbound)
@@ -24,7 +34,7 @@ router.get('/me/users', function(req, res) {
     }
     let uFinal = users.map((user) => {
         delete user.password;
-        user.isOnline = service.isUserOnline(user.id)
+        user.isOnline = service.isUserOnline(user.id);
         return user;
     }); 
     res.json(uFinal);
@@ -39,6 +49,11 @@ router.get('/me/users/active', function(req, res) {
             .map((user) => user.id)
         });
     }
+});
+
+router.post('/user/subscription/renew/:userId', adminCheck, async function(req, res) {
+    await context.store.renewSub(req.params.userId, req.body);
+    res.json({ msg: "Subscription renewed successfully", success: true });
 });
 
 router.post('/traffic/reset/:userId', async function(req, res) {

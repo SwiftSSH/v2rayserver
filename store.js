@@ -19,7 +19,7 @@ function Store() {
     this.jobInterval = setInterval(() => {
         this.handleExpiredAccounts();
         this.updateTraffic();
-    }, (6 * 1000) * 10);
+    }, 5000);
 }
 
 Store.prototype.updateRequestsCount = function(key, value=1) {
@@ -73,23 +73,49 @@ Store.prototype.updateTraffic = function () {
             delete traffic.up;
         if(traffic.down == 0)
             delete traffic.down;
-        this.updateUser(user.id, traffic)
+        this.updateUser(user.id, traffic);
     });
 };
 
 Store.prototype.handleExpiredAccounts = function () {
-    let xUsers = this.getUsers()
+    let xUsers = this.getUsers(false, false)
     .filter((user) => user.timestamp && this.isExpired(user.timestamp));
     xUsers.forEach((xuser) => {
         if(xuser.onDeleteTimestamp) {
-            if(this.isExpired(xuser.onDeleteTimestamp)) 
-                config.delete(`${this.usersPrefix}.${xuser.id}`);
+            if(this.isExpired(xuser.onDeleteTimestamp)) {
+                if(xuser.agent) {
+                    let agentUsers = this.getUsersByAgentId(xuser.id);
+                    agentUsers.forEach((auser) => { 
+                        config.delete(`${this.usersPrefix}.${auser.id}`);
+                    });
+                } else {
+                    config.delete(`${this.usersPrefix}.${xuser.id}`);
+                }
+            }
         } else {
-            this.updateUser(xuser.id, { 
-                enable: false, 
-                status: constants.status.TIMEOUT,
-                onDeleteTimestamp: utils.formatExpiryDate(30)
-            });
+            if(xuser.agent) {
+                let agentUsers = this.getUsersByAgentId(xuser.id);
+                this.updateUser(xuser.id, { 
+                    status: constants.status.TIMEOUT,
+                    onDeleteTimestamp: utils.formatExpiryDate(5)
+                });
+                /** the most efficient way is removing the whole inbound but
+                * it calls for reload which is not cool for the system.
+                * so we can iterate each user
+                */
+                agentUsers.forEach((auser) => { 
+                    this.updateUser(auser.id, { 
+                        enable: false, 
+                        status: constants.status.AGENT_TIMEOUT
+                    });
+                });
+            } else {
+                this.updateUser(xuser.id, { 
+                    enable: false, 
+                    status: constants.status.TIMEOUT,
+                    onDeleteTimestamp: utils.formatExpiryDate(5)
+                });
+            }
         }
     });
 };
@@ -153,13 +179,15 @@ Store.prototype.getUser = function(option, onlyAgents=false) {
     return users.filter((user) => user.email == option || user.id == option || user.username == option)[0];
 };
 
-Store.prototype.removeUser = function(emailOrId) {
+Store.prototype.removeUser = function(emailOrId, refresh=true, serviceRemove=true) {
     let user = this.getUser(emailOrId);
     if(user) {
         config.delete(`${this.usersPrefix}.${user.id}`);
         let inbound = this.getInbound(user.inboundId);
-        if(!user.agent) {
-            if(inbound.protocol == constants.protocols.VMESS) { 
+        if(user.agent) {
+            this.removeInbound(user.inboundId);
+        } else {
+            if(serviceRemove && inbound.protocol == constants.protocols.VMESS) { 
                 let service = this.getService();
                 service.RemoveUser(user.inboundId, { email: user.email || user.id  })
                 .then(console.log)
@@ -168,7 +196,7 @@ Store.prototype.removeUser = function(emailOrId) {
                     this.restart();
                 });
             } else {
-                this.restart();
+                if(refresh) this.restart();
             }
         }
         return true;
@@ -193,6 +221,27 @@ Store.prototype.proxyRemoveUser = function (inboundId, userId) {
         console.log(err.message)
         this.restart()
     });
+};
+
+Store.prototype.renewSub = async function(userId, data={}) {
+    let agent = this.getUser(userId, true);
+    let expires = data.expires || agent.expires;
+    let agentUsers = this.getUsersByAgentId(userId);
+    let success = await this.updateUser(userId, { 
+        status: null,
+        onDeleteTimestamp: null,
+        expires,
+        timestamp: utils.formatExpiryDate(expires)
+    });
+    if(success) {
+        agentUsers.forEach((auser) => { 
+            this.updateUser(auser.id, { 
+                enable: true, 
+                status: null
+            });
+        });
+    }
+    return true;
 };
 
 Store.prototype.unBarnUser = async function(emailOrId) {
@@ -262,7 +311,7 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false, b
             if(data.password)
                 data.password = await bcrypt.hash(data.password.toString(), await bcrypt.genSalt(10));
             if(data.expires && data.expires !== user.expires)
-                data.timestamp = utils.formatExpiryDate(timeout);
+                data.timestamp = utils.formatExpiryDate(data.expires);
         }
         config.set(`${this.usersPrefix}.${user.id}`, extend(user, data)); 
         if(refresh || data.id && (data.id !== user.id))
@@ -338,10 +387,9 @@ Store.prototype.removeInbound = function (id, refresh=true) {
     let inbound = this.getInbound(id);
     if(inbound) {
         let users = this.getUsersByInboundId(id);
-        users.map((user) => this.removeUser(user.id));
+        users.map((user) => this.removeUser(user.id, false, false));
         config.delete(`${this.inbounds}.${inbound.id}`);
-        if(refresh)
-            this.proxyRemoveInbound(inbound.id);
+        this.proxyRemoveInbound(inbound.id);
         return true;
     } 
     return false;

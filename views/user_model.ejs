@@ -31,7 +31,11 @@
         </a-form-item>
 
         <a-form-item label="Expires (days)">
-            <a-input v-model.trim="userModal.user.expires" type="number"></a-input>
+            <% if (admin) { %>
+                <a-input v-model.trim="userModal.user.expires"></a-input>
+            <% } else { %> 
+                <a-input v-model.trim="userModal.user.expires" type="number"></a-input>
+            <% } %>
         </a-form-item>
 
         <a-form-item label="enable">
@@ -54,7 +58,7 @@
         constructor({ 
             remark, inboundId, expires, maximum_users,
             username, agent, id, email, password, enable, protocol,
-            maximum_ips
+            maximum_ips, status
         }) {
             this.username = username;
             this.remark = remark || '🌐 SwiftSSH (' + (location.host.split(".")[0]).toUpperCase() + ')';
@@ -67,6 +71,7 @@
             this.enable = typeof enable !== 'boolean' ? true : enable;
             this.agent = agent;
             this.id = id;
+            this.status = status;
         }
     }
 
