@@ -114,9 +114,10 @@ Store.prototype.addUser = async function (user) {
     user.down = 0;
     user.alterId = 64;
     user.enable = typeof user.enable == 'boolean' ? user.enable : true;
+    user.timestamp = utils.formatExpiryDate(user.expires);
+    
     if(!user.agent) {
         if(this.isUserRegistered(user.email, user.id)) return false;
-        user.timestamp = utils.formatExpiryDate(user.expires);
         user.email = userId;
     } else {
         let agents = this.getAgents();
@@ -259,7 +260,9 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false, b
             if(data.maximum_users)
                 this.updateInbound(user.inboundId, { maximum_users: data.maximum_users });
             if(data.password)
-                data.password = await bcrypt.hash(data.password.toString(), await bcrypt.genSalt(10))
+                data.password = await bcrypt.hash(data.password.toString(), await bcrypt.genSalt(10));
+            if(data.expires && data.expires !== user.expires)
+                data.timestamp = utils.formatExpiryDate(timeout);
         }
         config.set(`${this.usersPrefix}.${user.id}`, extend(user, data)); 
         if(refresh || data.id && (data.id !== user.id))

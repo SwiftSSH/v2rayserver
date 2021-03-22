@@ -240,6 +240,7 @@ V2RAY.prototype.handleConnections = function(userId) {
     /** detect simultineous connection by one uuid */
     if(client) {
         let user = context.store.getUser(client.userId);
+        if(!user) return;
         let maximum_ips = user.maximum_ips || constants.MAX_IPS_PER_USER;
         if(client.ips.length > maximum_ips && !user.barned) {
             let lastAccessed = moment(client.ips[0].timestamp);

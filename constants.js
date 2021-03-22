@@ -1,5 +1,5 @@
 module.exports = Object.freeze({
-    MAX_MULT_CONN_ATTEMPS: 50,
+    MAX_MULT_CONN_ATTEMPS: 100,
     MAX_IPS_PER_USER: 1,
     protocols: {
         VMESS: 'vmess',
