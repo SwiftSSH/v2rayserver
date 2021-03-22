@@ -112,6 +112,10 @@ router.get('/servers', function(req, res) {
   res.render('servers', { title: 'SSH/SSL servers' });
 });
 
+router.get('/routing', function(req, res) {
+  res.render('routing', { title: 'Routing' });
+});
+
 router.get('/accounts', midleware, function(req, res) {
   res.render('accounts', { 
     title: 'accounts', 

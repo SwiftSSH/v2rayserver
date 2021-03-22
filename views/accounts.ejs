@@ -24,7 +24,7 @@
                         <a-card hoverable style="margin-bottom: 20px;">
                             <div slot="title">
                                 <a-button type="primary" icon="plus" @click="openAddInbound"></a-button>
-                                <a-radio-group default-value="all" @change="onSelectFilter" :style="{ marginBottom: '8px' }">
+                                <a-radio-group default-value="all" @change="filterUsers" :style="{ marginBottom: '8px' }">
                                     <a-radio-button value="all">all</a-radio-button>
                                     <a-radio-button value="online">online</a-radio-button>
                                     <a-radio-button value="expired">expired</a-radio-button>
@@ -61,9 +61,19 @@
                                     <a-tag color="green">[[ connInfo.ips ]]</a-tag>
                                 </a-col>
                             </a-row>
+                            <a-row>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    number of expired users：
+                                    <a-tag color="green">[[ getTotal("expired") ]]</a-tag>
+                                </a-col>
+                                <a-col :xs="24" :sm="24" :lg="12">
+                                    number of barned users：
+                                    <a-tag color="green">[[ getTotal("barned") ]]</a-tag>
+                                </a-col>
+                            </a-row>
                         </a-card>
                     </transition>
-                    <a-card v-if="data.length === 0">
+                    <a-card v-if="searchedData.length === 0">
                         No account, please add an account first
                     </a-card>
                     <transition-group tag="div" name="list">
@@ -317,7 +327,7 @@
                                         <a-tag color="green">[[ getTimestamp(item.onDeleteTimestamp) ]]</a-tag>
                                     </a-col>
                                 </a-row>
-                                <a-row>
+                                <a-row v-if="!item.isProxy">
                                     <a-col :xs="24" :sm="24" :lg="12">
                                         last accessed：
                                         <a-tag color="blue" v-if="item.lastAccessed || item.isOnline">
@@ -326,7 +336,7 @@
                                         </a-tag>
                                         <a-tag v-else color="green">not yet</a-tag>
                                     </a-col>
-                                    <a-col v-if="item.maximum_ips && !item.isProxy" :xs="24" :sm="24" :lg="12">
+                                    <a-col v-if="item.maximum_ips" :xs="24" :sm="24" :lg="12">
                                         maximum ips：<a-tag color="green">[[ item.maximum_ips ]]</a-tag>
                                     </a-col>
                                 </a-row>
@@ -358,13 +368,35 @@
                 data: [],
                 searchedData: [],
                 searchKey: '',
+                currentCategory: 'all' 
             },
             methods: {
-                onSelectFilter(e) {
-                    if(e.target.value == 'online') {
-                        //
+                filterUsers(e) {
+                    this.loadfiltered(e.target.value);
+                },
+                loadfiltered(category) {
+                    this.searchedData.splice(0, this.searchedData.length);
+                    this.currentCategory = category;
+                    if(category == 'online') {
+                        this.searchedData = this.data.filter((user) => user.isOnline);
+                    } else if(category == 'barned') {
+                        this.searchedData = this.data.filter((user) => user.status == 'barned');
+                    } else if(category == 'expired') {
+                        this.searchedData = this.data.filter((user) => user.status == 'timeout');
                     } else {
+                        this.currentCategory = 'all';
                         this.searchedData = this.data.slice();
+                    }
+                },
+                getTotal(category) {
+                    if(category == 'online') {
+                        return this.data.filter((user) => user.isOnline).length
+                    } else if(category == 'barned') { 
+                        return this.data.filter((user) => user.status == 'barned').length;
+                    } else if(category == 'expired') {
+                       return this.data.filter((user) => user.status == 'timeout').length;
+                    } else {
+                        return 0;
                     }
                 },
                 searchInbounds2(key) {
@@ -396,6 +428,8 @@
                                 } else {
                                     this.data[index].isOnline = false; 
                                 }
+                                if(this.currentCategory == 'online') 
+                                    this.loadfiltered(this.currentCategory);
                             });
                         }
                     });

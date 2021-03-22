@@ -167,7 +167,7 @@ V2RAY.prototype.getClients = function() {
 };
 
 V2RAY.prototype.logger = function (logStr) {
-    let data = logStr.split(" ");
+   let data = logStr.split(" ");
     let clean = (str) => str
     .replace(/\n/g, "")
     .replace(/\[/g,"")
@@ -177,26 +177,29 @@ V2RAY.prototype.logger = function (logStr) {
         date: data[0], 
         time: data[1],
         timestamp: moment(`${data[0]} ${data[1]}`, "YYYY/MM/DD hh:mm:ss"),
-        status: data[3],
+        status: data[5] && data[5].includes(constants.REQUESTS_STATUS.BLOCKED) ? 
+        constants.REQUESTS_STATUS.BLOCKED : data[3],
         source: {
             ip: data[2].split(':')[0],
             port: data[2].split(':')[1]
-        }
-    };
-
-    if(output.status === 'accepted') {
-        output.tag = clean(data[data.length - 1]);
-        output.accepted = true
-        output.target = {
+        },
+        target: {
             protocol: data[4].split(':')[0],
             address: data[4].split(':')[1],
             port: data[4].split(':')[2]
         }
+    };
+
+    if(output.status == constants.REQUESTS_STATUS.BLOCKED) {
+        this.accessLog(output);
+    } else if(output.status == constants.REQUESTS_STATUS.ACCEPTED) {
+        output.tag = clean(data[data.length - 1]);
+        output.accepted = true
         this.accessLog(output);
     } else {
         output.message = clean(`${data[data.length - 2]} ${data[data.length - 1]}`),
         output.ref = data[data.length - 3].split(":")[0];
-        if(output.status == 'rejected') {
+        if(output.status == constants.REQUESTS_STATUS.REJECTED) {
             output.accepted = false;
             this.accessLog(output);
         } else {
