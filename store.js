@@ -17,10 +17,10 @@ function Store() {
     this.serverDetails = "details";
     this.requestsInfo = "requests_info";
     this.routingRules = "routing_rules";
-    // this.jobInterval = setInterval(() => {
-    //     this.handleExpiredAccounts();
-    //     this.updateTraffic();
-    // }, 5000);
+    this.jobInterval = setInterval(() => {
+        this.handleExpiredAccounts();
+        this.updateTraffic();
+    }, 5000);
 }
 
 Store.prototype.updateRequestsCount = function(key, value=1) {
