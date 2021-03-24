@@ -8,18 +8,19 @@ const utils = require("./utils");
 const extend = require('xtend');
 const moment = require('moment');
 const constants = require("./constants");
+const configuration = require('./v2ray_config');
 
 function V2RAY({ v2rayPath, configPath, host, port, APIAddr, APIPort, ProxyFlag }) {
     this.v2rayPath = v2rayPath;
     this.host = host;
     this.port = port;
-    this.configTemplate = require(configPath);
     this.running = false;
     this.v2rayProc = null;
     this.APIAddr = APIAddr;
     this.APIPort = APIPort;
     this.ProxyFlag = ProxyFlag;
     this.running = false;
+    this.configPath = configPath;
     this.message = "Something went wrong";
     this.apiLoaded = false;
     this.restarting = false;
@@ -36,7 +37,7 @@ V2RAY.prototype.cmd = function (command) {
 };
 
 V2RAY.prototype.getAPI = function () {
-    let { inbounds } = this.getTemplateConfig();
+    let { inbounds } = require(this.configPath);
     try {
         let inbound = inbounds.filter((inb) => (inb.protocol === constants.protocols.DOKODEMO))[0];
         if(inbound) {
@@ -66,17 +67,15 @@ V2RAY.prototype.restart = function() {
 
 V2RAY.prototype.config = function () {
     try {
-        let v2_template_config = this.getTemplateConfig();
-        var inbounds = context.store.getInbounds(true)
-        v2_template_config.inbounds = v2_template_config.inbounds.concat(inbounds);
-        return v2_template_config;
+        var inbounds = context.store.getInbounds(true);
+        var rules = context.store.getRoutingRulesFormated(true);
+        let configTemplate = { ...configuration };
+        configTemplate.inbounds = configTemplate.inbounds.concat(inbounds);
+        configTemplate.routing.rules = rules;
+        return configTemplate;
     } catch(e) {
-        console.log(e.message)
+        console.log(e.message);
     }
-};
-
-V2RAY.prototype.getTemplateConfig = function () {
-    return extend(context.store.getSettings('v2_template_config') || this.configTemplate, {});
 };
 
 V2RAY.prototype.start = async function(freshStart) {
@@ -121,7 +120,8 @@ V2RAY.prototype.start = async function(freshStart) {
         this.restarting = false
     });
 
-    this.v2rayProc.stdin.write(JSON.stringify(this.config()));
+    let config = this.config();
+    this.v2rayProc.stdin.write(JSON.stringify(config));
     this.v2rayProc.stdin.end();
     this.code = 0;
     this.restarting = false
@@ -249,7 +249,7 @@ V2RAY.prototype.handleConnections = function(userId) {
         if(client.ips.length > maximum_ips && !user.barned) {
             let lastAccessed = moment(client.ips[0].timestamp);
             var duration = moment.duration(client.ips[1].timestamp.diff(lastAccessed));
-            if(duration.asSeconds() < 4) {
+            if(duration.asSeconds() < 5) {
                 let mult_conn_attempts = user.mult_conn_attempts ? user.mult_conn_attempts + 1 : 1;
                 if(mult_conn_attempts <= constants.MAX_MULT_CONN_ATTEMPS) {
                     context.store.updateUser(client.userId, {

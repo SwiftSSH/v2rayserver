@@ -152,7 +152,7 @@
                                 <a-col v-if="user.status" :xs="24" :sm="24" :lg="12">
                                     status：<a-tag color="red">[[ user.status ]]</a-tag>
                                     <% if (admin) { %>
-                                        <a-popconfirm title="Are you sure you want to renew subscription ?"
+                                        <a-popconfirm v-if="user.agent" title="Are you sure you want to renew subscription ?"
                                                         @confirm="renewSub(user)"
                                                         ok-text="confirm" cancel-text="cancel">
                                             <a-tag color="green">renew</a-tag>

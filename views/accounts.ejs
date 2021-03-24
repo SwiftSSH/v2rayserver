@@ -342,9 +342,11 @@
                                 </a-row>
                                 <a-row>
                                     <a-col v-if="item.status" :xs="24" :sm="24" :lg="12">
-                                        status：<a-tag color="red" @click="unBarnUser(item.id)">[[ item.status ]]</a-tag>
+                                        status：
+                                        <a-tag color="red" v-if="item.barned" @click="unBarnUser(item.id)">[[ item.status ]]</a-tag>
+                                        <a-tag color="red" v-else>[[ item.status ]]</a-tag>
                                     </a-col>
-                                    <a-col v-if="item.mult_conn_attempts" :xs="24" :sm="24" :lg="12">
+                                    <a-col v-if="item.mult_conn_attempts" :xs="24" :sm="24" :lg="12" @click="unBarnUser(item.id)">
                                         multple connection attempts <a-tag color="green">([[ item.mult_conn_attempts ]])</a-tag>
                                     </a-col>
                                 </a-row>
@@ -397,24 +399,6 @@
                        return this.data.filter((user) => user.status == 'timeout').length;
                     } else {
                         return 0;
-                    }
-                },
-                searchInbounds2(key) {
-                    if (isEmpty(key)) {
-                        this.searchedData = this.data.slice();
-                    } else {
-                        this.searchedData.splice(0, this.searchedData.length);
-                        this.data.forEach(item => {
-                            let regex = new RegExp(`${key}`, "gi");
-                            try {
-                                const found = item.remark.match(regex) 
-                                || item.id.match(regex)
-                                || item.inboundId.match(regex);
-                                if (found) {
-                                    this.searchedData.push(item);
-                                }
-                            } catch(e) {}
-                        });
                     }
                 },
                 getLoadbalancerinfo() {
@@ -593,6 +577,7 @@
                             inbound.sniffing.toString(false) : '{}',
                         remark: inbound.remark,
                     };
+                    console.log(data)
                     this.submit('/v2ray/inbound/add', data, inModal, callback, callback);
                 },
                 updateInbound(inbound, callback) {

@@ -60,32 +60,56 @@ Store.prototype.getRequestsInfo = function() {
     };
 };
 
-Store.prototype.getRoutingRules = function () {
-    ret
-    return config.get(this.routingRules) || [];
+Store.prototype.getRoutingRules = function (onlyEnabled) {
+    let rules = config.get(this.routingRules) || [];
+    if(rules.length === 0) {
+        let defaultRules = require('./route_rules')
+        .map((rule) => {
+            rule.default = true;
+            return rule;
+        });
+        config.set(this.routingRules, defaultRules);
+        rules = config.get(this.routingRules);
+    }
+    if(onlyEnabled)
+        return rules.filter((r) => r.enable);
+    return rules;
 };
 
-Store.prototype.addRoutingRule = function (data, refresh=false) {
+Store.prototype.getRoutingRulesFormated = function(onlyEnabled=false) {
+    let raw = this.getRoutingRules(onlyEnabled);
+    let rules = [];
+    raw.forEach((rule) => {
+        let obj = {};
+        rule.fields.forEach((field) => {
+            obj[field.key] = field.value;
+        });
+        rules.push(obj);
+    });
+    return rules;
+};
+
+Store.prototype.removeRoutingRule = function (position, refresh=false) {
     let rules = this.getRoutingRules();
-    let values = data.value.toString().split(',');
-    let rule = {
-        [data.tag]: data.tagValue,
-        type: data.type,
-        [data.field]: values,
-        enable: data.enable,
-        remark: data.remark
-    };
-    let sameIndex = rules.findIndex((r) => 
-        (r[data.tag] == data.tagValue && r.type == data.type) && r.hasOwnProperty(data.field)
-    );
-    if(sameIndex >=0) {
-        let newValues = rules[sameIndex][data.field].concat(values);
-        rules[sameIndex][data.field] = [...new Set(newValues)];
-    } else {
-        rules.push(rule);
-    }
+    let rule = rules[position];
+    if(rule && rule.default) return;
+    rules.splice(position, 1);
     config.set(this.routingRules, rules);
-    if(refresh) this.restart();
+    this.restart();
+};
+
+Store.prototype.updateRoutingRule = function (position, data) {
+    let rules = this.getRoutingRules();
+    rules[position] = extend(rules[position], data);
+    config.set(this.routingRules, rules);
+    this.restart();
+};
+
+Store.prototype.addRoutingRule = function (data) {
+    let rules = this.getRoutingRules();
+    rules.push(data);
+    config.set(this.routingRules, rules);
+    this.restart();
 };
 
 Store.prototype.updateTraffic = function () {

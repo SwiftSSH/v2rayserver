@@ -155,14 +155,23 @@ router.get('/routing/rules', adminCheck, function(req, res) {
     res.json(context.store.getRoutingRules());
 });
 
+router.get('/routing/rules/formated', adminCheck, function(req, res) {
+    res.json(context.store.getRoutingRulesFormated());
+});
+
 router.post('/routing/add', JsonBody, adminCheck, function(req, res) {
-    context.store.addRoutingRule(req.body, req.body.refresh);
+    context.store.addRoutingRule(req.body);
     res.json({ msg: 'Rule added successfully', success: true })
 });
 
-router.post('/routing/update', JsonBody, adminCheck, function(req, res) {
-    console.log(req.body)
-    res.json({ msg: 'Rule updated successfully', success: true })
+router.post('/routing/update/:position', JsonBody, adminCheck, function(req, res) {
+    context.store.updateRoutingRule(req.params.position, req.body);
+    res.json({ msg: 'Rule updated successfully', success: true });
+});
+
+router.post('/routing/del/:position', adminCheck, function(req, res) {
+    context.store.removeRoutingRule(req.params.position);
+    res.json({ msg: 'Rule deleted successfully', success: true });
 });
 
 module.exports = router;

@@ -126,7 +126,7 @@ router.get('/accounts', midleware, function(req, res) {
 
 router.get('/setting', midleware, function(req, res, next) {
   res.render('setting', { 
-    title: 'panel settings', 
+    title: 'Settings', 
     nginx_config: utils.getNginxConfig(),
     settings: JSON.stringify(utils.getSettings()),
   });

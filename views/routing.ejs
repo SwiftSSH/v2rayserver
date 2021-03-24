@@ -9,7 +9,6 @@
         }
     </style>
 
-
     <a-layout id="app" v-cloak>
         <%- include('sidebar') -%>
         <a-layout id="content-layout">
@@ -19,20 +18,34 @@
                         <a-card hoverable >
                             <div slot="title">
                                 <a-button type="primary" icon="plus" @click="openRule()"></a-button>
+                                <a-input v-model="searchKey" style="float: right; width: 200px;" placeholder="search" autofocus></a-input>
                             </div>
-                            <div v-for="rule in rules" :key="rule.id">
-                                <div>
-                                    <a-switch v-model="rule.enable"></a-switch>
-                                    <a>[[ rule.remark ]]</a>
-                                </div>
-                                <a-divider></a-divider>
-                            </div>
+                            <a-list
+                            class="demo-loadmore-list"
+                                :loading="loading"
+                                item-layout="horizontal"
+                                :data-source="searchedData"
+                                style="max-height: 500px; overflow-y: scroll;"
+                            >
+                            <a-list-item slot="renderItem" slot-scope="item, index">
+                                <a-switch slot="actions" v-model="item.enable" @change="enableRule(index, item.enable)"></a-switch>
+                                <a slot="actions" @click="openRule(item, index)">edit</a>
+                                <a-popconfirm v-if="!item.default" slot="actions" title="Are you sure?"
+                                    @confirm="deleteRule(index)"
+                                    ok-text="confirm" cancel-text="cancel">
+                                    <a>delete</a>
+                                </a-popconfirm>
+                                <a-list-item-meta>
+                                    <div slot="description" v-for="field in item.fields" :key="field.key">
+                                        <div>[[ field.key ]]: [[ formatArray(field.value) ]]</div>
+                                    </div>
+                                    <a slot="title">[[ item.remark ]]</a>
+                                </a-list-item-meta>
+                            </a-list-item>
+                          </a-list>
                         </a-card>
                     </transition>
                 </a-spin>
-                <a-card v-if="rules.length === 0">
-                    No rules
-                </a-card>
             </a-layout-content>
         </a-layout>
     </a-layout>
@@ -44,26 +57,63 @@
             el: '#app',
             data: {
                 spinning: false,
-                rules: []
+                rules: [],
+                searchedData: [],
+                loading: true,
+                searchKey: ''
             },
             methods: {
+                formatArray(arr) {
+                    return typeof arr === 'object' ? arr.join(';') : arr;
+                },
                 getRules() {
                     get({
                         url: '/v2ray/routing/rules',
                         success: data => {
                             this.rules = data;
+                            this.loading = false;
+                            this.searchInbounds();
                         }
                     });
                 },
-                openRule(rule = {}) {
+                enableRule(position, enable){
+                    let data = { enable: enable };
+                    this.submit('/v2ray/routing/update/' + position, data);
+                }, 
+                deleteRule(position){
+                    this.submit('/v2ray/routing/del/' + position); 
+                },
+                openRule(rule = {}, position) {
                     rulesModal.show({
-                        title: rule.type ? 'update rule' : 'add rule',
-                        okText: rule.type ? 'save' : 'add',
+                        title: rule.remark ? 'update rule' : 'add rule',
+                        okText: rule.remark ? 'save' : 'add',
                         rule,
                         confirm: () => {
                             rulesModal.loading();
-                            this.submit('/v2ray/routing/' + (rule.type ? 'update': 'add'), 
-                                rulesModal.rule, rulesModal, 
+                            rulesModal.rule.fields = (rulesModal.rule.fields || []).map((f) => {
+                                if(typeof f.value !== 'object') {
+                                    if(f.value.startsWith('>') || f.value.includes(';')) {
+                                        f.dataType = 'object';
+                                    }
+                                }
+                                if(f.dataType == 'object') {
+                                    if(typeof f.value !== f.dataType) {
+                                        f.value = f.value.replace(/>/, "")
+                                        .replace(/\,/g, ";")
+                                        .split(';');
+                                    }
+                                }
+                                return f;
+                            }).filter((k) => k.value && k.key);
+                            
+                            let data = {
+                                remark: rulesModal.rule.remark,
+                                enable: rulesModal.rule.enable,
+                                fields: JSON.stringify(rulesModal.rule.fields)
+                            }
+                            
+                            this.submit('/v2ray/routing/' + (position >=0 ? 'update': 'add') + (position >=0 ? '/' + position : ''), 
+                                data, rulesModal, 
                                 () => rulesModal.closeLoading(), 
                                 () => rulesModal.closeLoading()
                             );
@@ -79,6 +129,7 @@
                                 if (modal) {
                                     modal.close();
                                 }
+                                this.loading = true;
                                 this.getRules();
                             }
                             execute(success, data);
@@ -86,6 +137,29 @@
                         error: error,
                     });
                 },
+                searchInbounds(key) {
+                    if (isEmpty(key)) {
+                        this.searchedData = this.rules.slice();
+                    } else {
+                        this.searchedData.splice(0, this.searchedData.length);
+                        this.rules.forEach(item => {
+                            let regex = new RegExp(`${key}`, "gi");
+                            try {
+                                const found = item.remark.match(regex) 
+                                || item.tagValue.match(regex)
+                                || item.value.match(regex);
+                                if (found) {
+                                    this.searchedData.push(item);
+                                }
+                            } catch(e) {}
+                        });
+                    }
+                },
+            },
+            watch: {
+                searchKey(value) {
+                    this.searchInbounds(value);
+                }
             },
             mounted() {
                 this.getRules();

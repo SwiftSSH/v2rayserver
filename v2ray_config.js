@@ -1,8 +1,6 @@
 module.exports = {
   "log": {
-    "loglevel": "warning",
-    // "access": "./log/access.log",
-    // "error": "./log/error.log",
+    "loglevel": "warning"
   },
   "policy": {
 		"levels": {
@@ -61,36 +59,7 @@ module.exports = {
     }
   ],
   "routing": {
-    "rules": [
-      {
-        "inboundTag": [
-          "api"
-        ],
-        "outboundTag": "api",
-        "type": "field"
-      },
-      {
-        "domain": [
-          "geosite:category-ads-all"
-        ],
-        "outboundTag": "blocked",
-        "type": "field"
-      },
-      {
-        "ip": [
-          "geoip:private"
-        ],
-        "outboundTag": "blocked",
-        "type": "field"
-      },
-      {
-        "outboundTag": "blocked",
-        "protocol": [
-          "bittorrent"
-        ],
-        "type": "field"
-      }
-    ]
+    "rules": []
   },
   "stats": {}
 }

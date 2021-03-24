@@ -5,40 +5,34 @@
         <a-form-item label="remark">
             <a-input class="input-size" v-model.trim="rulesModal.rule.remark"></a-input>
         </a-form-item>
-        <a-form-item label="type">
-            <a-input class="input-size" v-model.trim="rulesModal.rule.type"></a-input>
-        </a-form-item>
-        <a-form-item label="tag">
-            <a-input class="input-size" v-model.trim="rulesModal.rule.tag"></a-input>
-        </a-form-item>
-        <a-form-item label="tag value">
-            <a-input class="input-size" v-model.trim="rulesModal.rule.tagValue"></a-input>
-        </a-form-item>
-        <a-form-item label="field">
-            <a-input class="input-size" v-model.trim="rulesModal.rule.field"></a-input>
-        </a-form-item>
-        <a-form-item label="value">
-            <a-input class="input-size" style="width: 290px; height: 72px;" v-model.trim="rulesModal.rule.value" type="textarea"></a-input>
-        </a-form-item>
+
+        <template v-for="(field, fieldIndex) in rulesModal.rule.fields" :key="fieldIndex">
+            <a-form-item label="field">
+                <a-input class="input-size" v-model.trim="field.key"></a-input>
+            </a-form-item>
+            <a-form-item label="value (for array start with '>')">
+                <a-input class="input-size" v-model.trim="field.value"></a-input>
+                <a-button icon="delete" @click="addfields(fieldIndex)" style="margin: 5px;"></a-button>
+            </a-form-item>
+        </template>
+
+        <a-form layout="inline">
+            <a-form-item>
+                <a-button icon="plus" @click="addfields()"></a-button>
+            </a-form-item>
+        </a-form>
+
         <a-form-item label="enable">
             <a-switch v-model="rulesModal.rule.enable"></a-switch>
-        </a-form-item>
-        <a-form-item label="refresh">
-            <a-switch v-model="rulesModal.rule.refresh"></a-switch>
         </a-form-item>
     </a-form>
 </a-modal>
 <script>
 
     class RuleModel {
-        constructor({ tag, tagValue, type, enable, remark, field, value, refresh }) {
-            this.tag = tag || "outboundTag";
-            this.tagValue = tagValue || "blocked";
-            this.type = type || "field";
-            this.field = field || 'ip';
-            this.value = value;
-            this.refresh = refresh;
+        constructor({ enable, remark, fields }) {
             this.remark = remark;
+            this.fields = fields || [];
             this.enable = typeof enable == 'boolean' ? enable : true;
         }
     }
@@ -56,7 +50,17 @@
         show({ title='', okText='confirm', rule={}, confirm=()=>{} }) {
             this.title = title;
             this.okText = okText;
-            this.rule = new RuleModel(rule);
+            if(rule.fields && rule.fields.length) {
+                this.rule = new RuleModel(rule);
+                this.rule.fields = this.rule.fields.map((rule) => {
+                    if(rule.dataType == 'object') {
+                        rule.value = typeof rule.value !== 'object' ?  rule.value(';') : rule.value;
+                    }
+                    return rule;
+                });
+            } else {
+                this.rule = new RuleModel(rule);
+            }
             this.confirm = confirm;
             this.visible = true;
         },
@@ -78,7 +82,18 @@
         data: {
             rulesModal: rulesModal
         },
-        methods: {}
+        methods: {
+            addfields(fieldIndex) {
+                if(fieldIndex >=0) {
+                    this.rulesModal.rule.fields.splice(fieldIndex, 1);
+                    return;
+                }
+                this.rulesModal.rule.fields.push({
+                    key: "",
+                    value: ""
+                });
+            }
+        }
     });
 
 </script>

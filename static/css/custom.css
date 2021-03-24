@@ -133,3 +133,19 @@
     -webkit-transform: translateY(-30px);
     transform: translateY(-30px)
 }
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
