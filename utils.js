@@ -86,7 +86,7 @@ module.exports = {
             {"id": 4, "key": "cert_file", "name": "cert_file", "value": "", "value_type": "text", "tip": "", "need_restart": true},
             {"id": 5, "key": "key_file", "name": "key_file", "value": "", "value_type": "text", "tip": "", "need_restart": true},
             {"id": 6, "key": "v2_template_config", "name": "v2_template_config", "value": require("./v2ray_config.js"), "value_type": "textarea", "tip": "", "need_restart": false},
-            {"id": 7, "key": "nginx_config", "name": "nginx_config", "value": "", "value_type": "textarea", "tip": "", "need_restart": false}
+            // {"id": 7, "key": "nginx_config", "name": "nginx_config", "value": "", "value_type": "textarea", "tip": "", "need_restart": false}
         ];
 
         return defaultSettings.map((setting) => {
