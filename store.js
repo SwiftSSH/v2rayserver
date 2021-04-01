@@ -5,6 +5,7 @@ const constants = require("./constants");
 const moment = require('moment');
 const extend = require("xtend");
 const bcrypt = require("bcryptjs");
+const xtend = require('xtend');
 const config = new Configstore("v2rayStore");
 
 function Store() {
@@ -119,25 +120,33 @@ Store.prototype.updateTraffic = function () {
         let traffic = service.getTraffic(type, tag);
         return traffic;
     }
-    let users = this.getUsers();
-    let inbounds = this.getInbounds();
+
+    let processTraffic = function(data, traffic) {
+        let today = moment().format('YYYY-MM-DD');
+        data.traffic = data.traffic || {};
+        let trafficToday = data.traffic[today] || { up: 0, down: 0 };;
+        data.traffic[today] = {
+            up: trafficToday.up + traffic.up,
+            down: trafficToday.down + traffic.down,
+        };
+        return {
+            traffic: data.traffic,
+            up: data.up + traffic.up,
+            down: data.down + traffic.down
+        };
+    };
+
+    let users = this.getEnabledUsers();
+    let inbounds = this.getInbounds(true);
+
     inbounds.forEach((inbound) => { 
         let traffic = getTraffic("inbound", inbound.tag);
-        // console.log("inbound", traffic)
-        if(traffic.up == 0)
-            delete traffic.up;
-        if(traffic.down == 0)
-            delete traffic.down;
-        this.updateInbound(inbound.id, traffic);
+        this.updateInbound(inbound.id, processTraffic(inbound, traffic));
     });
+
     users.forEach((user) => {
         let traffic = getTraffic("user", user.email);
-        // console.log("user", traffic)
-        if(traffic.up == 0)
-            delete traffic.up;
-        if(traffic.down == 0)
-            delete traffic.down;
-        this.updateUser(user.id, traffic);
+        this.updateUser(user.id, processTraffic(user, traffic));
     });
 };
 
@@ -385,7 +394,7 @@ Store.prototype.updateUser = async function(emailOrId, data={}, refresh=false, b
     return false;
 };
 
-Store.prototype.getUsers = function(onlyAgents = false, onlyProxed = true) {
+Store.prototype.getUsers = function(onlyAgents=false, onlyProxed=true) {
     let users = this.getAll(this.usersPrefix);
     if(onlyProxed) 
         return users.filter((user) => !user.agent);
@@ -465,6 +474,11 @@ Store.prototype.getField = function (protocol) {
     if(constants.protocols.VMESS == protocol || constants.protocols.VLESS == protocol 
         || constants.protocols.TROJAN == protocol) 
         return 'clients';
+};
+
+Store.prototype.getEnabledUsers = function(onlyAgents=false, onlyProxed=true) {
+    let users = this.getUsers(onlyAgents, onlyProxed);
+    return users.filter((user) => user.enable && !user.barned);
 };
 
 Store.prototype.getInbounds = function (onlyEnabled=false) {

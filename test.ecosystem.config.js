@@ -7,7 +7,7 @@ module.exports = {
       "production" : {
         "user" : "paul",
         // Multi host is possible, just by passing IPs/hostname as an array
-        "host" : ["143.110.254.161"],
+        "host" : ["ca.paulgrammer.tk"],
         "ref"  : "origin/test",
         "repo" : "git@github.com:SwiftSSH/v2rayserver.git",
         "path" : "/home/paul/v2rayserver",

@@ -303,11 +303,11 @@ V2RAY.prototype.getCert = function () {
     });
 };
 
-V2RAY.prototype.getTraffic = function(type, tag, reset=false) {
+V2RAY.prototype.getTraffic = function(type, tag, reset=true) {
     let output = {down: 0, up: 0 };
     [{ bound: "downlink", key: "down" },{ bound: "uplink", key: "up"}]
     .forEach(({ bound, key }) => {
-        let command = spawnSync(`./bin/v2ctl`, [
+        let command = spawnSync(`${this.v2rayPath}/v2ctl`, [
             "api", "--server=127.0.0.1:10085", 
             "StatsService.QueryStats", 
             `pattern: "${type}>>>${tag}>>>traffic>>>${bound}"`, `reset: ${reset}`

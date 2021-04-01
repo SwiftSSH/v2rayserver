@@ -12,3 +12,11 @@
 - https://gist.github.com/RobertMcReed/c6963a09962adf22c91e7c1370dffc13
 ### "Help, I keep getting a 'Permission Denied (publickey)' error when I push!"  DIGITAL OCEAN USERS WHO MIGHT ENCOUNTER THIS PROBLEM
 https://gist.github.com/adamjohnson/5682757
+### HEROKU DEPLOY
+https://github.com/ygcaicn/Xray-heroku
+### INSTALL WITH SCRIPT
+bash <(curl -L -s https://raw.githubusercontent.com/wulabing/V2Ray_ws-tls_bash_onekey/master/install.sh) | tee v2ray_ins.log
+### DIGITAL OCEAN PROMOTION CODES
+https://www.newcoupons.info/digitalocean-coupon-codes/
+### Setting up public key authentication
+https://www.ssh.com/ssh/copy-id
