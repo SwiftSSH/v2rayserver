@@ -9,7 +9,7 @@
     "pm2-dev": "pm2 start ecosystem.config.js --env development",
     "pm2-restart": "pm2 startOrRestart ecosystem.config.js",
     "pm2-deploy": "pm2 deploy ecosystem.config.js production",
-    "pm2-deploy-test": "pm2 deploy test.ecosystem.config.js production",
+    "pm2-deploy-test": "pm2 deploy test.ecosystem.config.js production exec \"pm2 save\"",
     "pm2-logs": "pm2 deploy ecosystem.config.js production exec \"pm2 logs\"",
     "pm2-ls": "pm2 deploy ecosystem.config.js production exec \"pm2 ls\"",
     "pm2-flush": "pm2 deploy ecosystem.config.js production exec \"pm2 flush\"",
