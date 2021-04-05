@@ -40,7 +40,11 @@
                                     <a-tag color="green">[[ sizeFormat(total.up) ]] / [[ sizeFormat(total.down) ]]</a-tag>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
-                                    total traffic： <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
+                                    total traffic： <a-popconfirm title="Are you sure you want to reset all traffic to 0? It's unrecoverable"
+                                        @confirm="resetAllTraffic()"
+                                        ok-text="confirm" cancel-text="cancel">
+                                        <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
+                                    </a-popconfirm>
                                 </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     number of inbounds：

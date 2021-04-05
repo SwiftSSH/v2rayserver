@@ -564,6 +564,27 @@ Store.prototype.getEnabledUsers = function(onlyAgents=false, onlyProxed=true) {
     return users.filter((user) => user.enable && !user.barned);
 };
 
+Store.prototype.resetTraffic = function (dataId, Type='Inbound', date=moment().format('YYYY-MM-DD')) {
+    let data = this[`get${Type}`](dataId);
+    data.traffic[date] = { 'up': 0, 'down': 0 };
+    this[`update${Type}`](dataId, {
+        traffic: data.traffic,
+        maximumTrafficDate: null,
+        status: data.status === constants.status.MAX_TRAFFIC ? null : data.status
+    });
+};
+
+Store.prototype.resetAllTraffic = function (date) {
+    let users = this.getUsers();
+    let inbounds = this.getInbounds();
+    users.forEach((user) => {
+        this.resetTraffic(user.id, 'User', date);
+    });
+    inbounds.forEach((inbound) => {
+        this.resetTraffic(inbound.id, 'Inbound', date);
+    });
+};
+
 Store.prototype.getInbounds = function (onlyEnabled=false) {
     let inbounds = this.getAll(this.inbounds)
     if(onlyEnabled) 

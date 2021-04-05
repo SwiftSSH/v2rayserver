@@ -58,7 +58,7 @@ router.post('/user/subscription/renew/:userId', adminCheck, async function(req, 
 });
 
 router.post('/traffic/reset/:userId', async function(req, res) {
-    await context.store.updateUser(req.params.userId, {'up': 0, 'down': 0 });
+    context.store.resetTraffic(req.params.userId, 'User');
     res.json({ msg: 'Reset traffic successfully', success: true })
 });
 
