@@ -5,6 +5,7 @@ let request = require('request');
 let progress = require('request-progress');
 const moment = require('moment');
 const extend = require("xtend");
+const instances = require("./instances");
 
 module.exports = {
     installV2RAY(version = "v4.34.0") {
@@ -51,7 +52,7 @@ module.exports = {
     },
 
     getUsers() {
-        const { store, instances } = require('./context');
+        const { store } = require('./context');
         let service = instances.get("v2rayService");
         return store.getUsers().map((user) => {
             let inbound = store.getInbound(user.inboundId);
@@ -68,8 +69,9 @@ module.exports = {
                 up: user.up,
                 down: user.down,
                 status: user.status,
-                mult_conn_attempts: user.mult_conn_attempts || 0,
+                mult_conn_attempts: user.mult_conn_attempts,
                 maximum_ips: user.maximum_ips,
+                maximum_daily_traffic: user.maximum_daily_traffic,
                 lastAccessed: user.lastAccessed,
                 barned: user.barned,
                 isOnline: service.isUserOnline(user.id)
@@ -106,6 +108,20 @@ module.exports = {
         return store.getSettings("nginx_config") 
         || fs.readFileSync("./ngnix_config.ejs").toString()
     },
-
-    rePopulateNginxConfigFile(str, noReload) {}    
+    trafficUnits(unit='KB') {
+        let ONE_KB = 1024;
+        let ONE_MB = ONE_KB * 1024;
+        let ONE_GB = ONE_MB * 1024;
+        let ONE_TB = ONE_GB * 1024;
+        let ONE_PB = ONE_TB * 1024;
+        return {
+            'KB': ONE_KB, 'MB': ONE_MB, 'GB': ONE_GB, 'TB': ONE_TB, 'PB': ONE_PB
+        }[unit.toUpperCase()] || ONE_KB;
+    },
+    formatTrafficToBytes(sizeStr="1") {
+        let [size, UnitString] = sizeStr.toString().split(" ");
+        let multplier = typeof Number(size) === 'number' ? Number(size) : 1;
+        let unit = this.trafficUnits(UnitString);
+        return unit * multplier;
+    }
 }

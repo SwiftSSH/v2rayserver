@@ -326,6 +326,9 @@
                                         deletes：
                                         <a-tag color="green">[[ getTimestamp(item.onDeleteTimestamp) ]]</a-tag>
                                     </a-col>
+                                    <a-col v-if="item.maximum_daily_traffic" :xs="24" :sm="24" :lg="12">
+                                        maximum daily traffic：<a-tag color="green">[[ item.maximum_daily_traffic ]]</a-tag>
+                                    </a-col>
                                 </a-row>
                                 <a-row v-if="!item.isProxy">
                                     <a-col :xs="24" :sm="24" :lg="12">
@@ -480,6 +483,7 @@
                         inb.status = user.status;
                         inb.mult_conn_attempts = user.mult_conn_attempts;
                         inb.maximum_ips = user.maximum_ips;
+                        inb.maximum_daily_traffic = user.maximum_daily_traffic;
                         inb.lastAccessed = user.lastAccessed;
                         inb.isOnline = user.isOnline;
                         inb.barned = user.barned;
@@ -495,6 +499,8 @@
                         inb.down = inbound.down;
                         inb.isProxy = true;
                         inb.maximum_users = inbound.maximum_users;
+                        inb.maximum_daily_traffic = inbound.maximum_daily_traffic;
+                        inb.dynamicPort = inbound.dynamicPort;
                         inb.status = inbound.status;
                         return inb;
                     }).reverse();
@@ -548,8 +554,8 @@
                         protocol: inbound.protocol,
                         confirm: () => {
                             adduserModal.loading();
-                            let { remark, expires, maximum_ips, enable, inboundId } = adduserModal.inbound;
-                            let data = { remark, expires, maximum_ips, enable, inboundId };
+                            let { remark, expires, maximum_ips, enable, inboundId, maximum_daily_traffic } = adduserModal.inbound;
+                            let data = { remark, expires, maximum_ips, enable, inboundId, maximum_daily_traffic };
                             if(Protocols.VMESS === inbound.protocol) {
                                 data.id = adduserModal.inbound.settings.vmesses[0].id;
                                 data.alterId = adduserModal.inbound.settings.vmesses[0].alterId;
@@ -570,6 +576,8 @@
                         port: inbound.port,
                         listen: inbound.listen,
                         maximum_users: inbound.maximum_users,
+                        maximum_daily_traffic: inbound.maximum_daily_traffic,
+                        dynamicPort: inbound.dynamicPort,
                         protocol: inbound.protocol,
                         settings: inbound.settings.toString(false),
                         streamSettings: inbound.stream.toString(false),
@@ -577,7 +585,6 @@
                             inbound.sniffing.toString(false) : '{}',
                         remark: inbound.remark,
                     };
-                    console.log(data)
                     this.submit('/v2ray/inbound/add', data, inModal, callback, callback);
                 },
                 updateInbound(inbound, callback) {
@@ -586,6 +593,8 @@
                         listen: inbound.listen,
                         protocol: inbound.protocol,
                         maximum_users: inbound.maximum_users,
+                        maximum_daily_traffic: inbound.maximum_daily_traffic,
+                        dynamicPort: inbound.dynamicPort,
                         settings: inbound.settings.toString(false),
                         streamSettings: inbound.stream.toString(false),
                         sniffing: [Protocols.VMESS, Protocols.SHADOWSOCKS].indexOf(inbound.protocol) >= 0 ?

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const context = require('../context');
+const instances = require('../instances');
 
 let adminCheck = function(req, res, next) {
     if(res.locals.admin) {
@@ -26,7 +27,7 @@ router.get('/me', function(req, res) {
 
 router.get('/me/users', function(req, res) {
     let users = [];
-    let service = context.instances.get("v2rayService");
+    let service = instances.get("v2rayService");
     if(res.locals.user) {
         users = context.store.getUsersByAgentId(res.locals.user.id);
     } else if(res.locals.admin) {
@@ -42,7 +43,7 @@ router.get('/me/users', function(req, res) {
 
 router.get('/me/users/active', function(req, res) {
     if(res.locals.user) {
-        let service = context.instances.get("v2rayService");
+        let service = instances.get("v2rayService");
         let users = context.store.getUsersByAgentId(res.locals.user.id);
         res.json({ 
             activeUsers: users.filter((user) => service.isUserOnline(user.id))

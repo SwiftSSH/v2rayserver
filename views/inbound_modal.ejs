@@ -414,6 +414,12 @@
         <a-form-item label="maximum users">
             <a-input type="number" v-model.number="inModal.inbound.maximum_users"></a-input>
         </a-form-item>
+        <a-form-item label="maximum daily traffic">
+            <a-input v-model.trim="inModal.inbound.maximum_daily_traffic"></a-input>
+        </a-form-item>
+        <a-form-item label="dynamic port">
+            <a-switch v-model="inModal.inbound.dynamicPort"></a-switch>
+        </a-form-item>    
         <a-form-item label="enable">
             <a-switch v-model="inModal.inbound.enable"></a-switch>
         </a-form-item>
@@ -436,6 +442,9 @@
             this.okText = okText;
             if (inbound) {
                 this.inbound = Inbound.fromJson(inbound.toJson());
+                this.inbound.maximum_users = inbound.maximum_users;
+                this.inbound.maximum_daily_traffic = inbound.maximum_daily_traffic;
+                this.inbound.dynamicPort = inbound.dynamicPort;
             } else {
                 this.inbound = new Inbound();
             }

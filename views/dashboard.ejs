@@ -37,6 +37,9 @@
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     total traffic： <a-tag color="green">[[ sizeFormat(total.up + total.down) ]]</a-tag>
                                 </a-col>
+                                <a-col v-if="me.inbound" :xs="24" :sm="24" :lg="12">
+                                    maximum daily traffic：<a-tag color="green">[[ me.inbound.maximum_daily_traffic ]]</a-tag>
+                                </a-col>
                                 <a-col :xs="24" :sm="24" :lg="12">
                                     users： <a-tag color="blue">[[ users.length ]]/[[ me.inbound.maximum_users ]]</a-tag>
                                 </a-col>
@@ -163,6 +166,9 @@
                                     multple connection attempts <a-tag color="green">([[ user.mult_conn_attempts ]])</a-tag>
                                 </a-col>
                             </a-row>
+                            <a-col v-if="user.maximum_daily_traffic" :xs="24" :sm="24" :lg="12">
+                                maximum daily traffic：<a-tag color="green">[[ user.maximum_daily_traffic ]]</a-tag>
+                            </a-col>
                         </div>
                     </a-card>
                 </transition-group>
@@ -194,9 +200,7 @@
             spinning: false,
             users: [],
             searchedData: [],
-            me: {
-                inbound: { maximum_users: 0 }
-            },
+            me: { inbound: { maximum_users: 0 } },
             connInfo: { activeConnections: 0 },
             searchKey: '',
             size: 'small',

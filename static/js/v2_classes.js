@@ -539,6 +539,8 @@ class Inbound extends V2CommonClass {
                 expires = '1 day',
                 maximum_users = 5,
                 maximum_ips = 1,
+                maximum_daily_traffic = '5 GB',
+                dynamicPort = false, 
                 inboundId = null
                 ) {
         super();
@@ -555,6 +557,8 @@ class Inbound extends V2CommonClass {
         this.inboundId = inboundId;
         this.maximum_users = maximum_users;
         this.maximum_ips = maximum_ips;
+        this.dynamicPort = dynamicPort;
+        this.maximum_daily_traffic = maximum_daily_traffic;
     }
 
     reset() {

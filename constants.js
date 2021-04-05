@@ -1,6 +1,4 @@
 module.exports = Object.freeze({
-    MAX_MULT_CONN_ATTEMPS: 50,
-    MAX_IPS_PER_USER: 1,
     protocols: {
         VMESS: 'vmess',
         VLESS: 'vless',
@@ -13,7 +11,6 @@ module.exports = Object.freeze({
         TCP:'tcp',
         UDP:'udp'
     },
-    SECRET_KEY: "VGGVknJ6z21gEyKIUFaz7mJ0P2fzaWIL",
     security: {
         TLS: 'tls'
     },
@@ -25,10 +22,17 @@ module.exports = Object.freeze({
     status: {
         TIMEOUT: 'timeout',
         AGENT_TIMEOUT: 'agent timeout',
-        BARNED: "barned"
+        BARNED: "barned",
+        MAX_TRAFFIC: 'maximum traffic'
     },
     env: {
         PRODUCTION: 'production',
         DEVELOPMENT: 'development'
-    }
+    },
+    SECRET_KEY: "VGGVknJ6z21gEyKIUFaz7mJ0P2fzaWIL",
+    JOB_INTERVAL: 30,
+    MAX_MULT_CONN_ATTEMPS: 50,
+    MAX_IPS_PER_USER: 1,
+    MAX_DAIRY_TRAFFIC: '5 GB',
+    MAX_INBOUND_USERS: 100
 });

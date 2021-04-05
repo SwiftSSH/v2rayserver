@@ -1,9 +1,13 @@
+global.delay = ms => new Promise(res => setTimeout(res, ms));
 const Express = require('express');
 const V2RAY = require('./v2ray');
 const path = require('path');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-let authMiddleWare = require("./routes/middleware");
+const cron = require('node-cron');
+const authMiddleWare = require("./routes/middleware");
+const Logger = require('./logger');
+const context = require('./context');
 let app = Express();
 let PORT = process.env.PORT || 5000;
 
@@ -37,11 +41,16 @@ app.use(function(err, req, res, next) {
 });
 
 app.listen(PORT, function () {
-  console.log(`Panel is listening on port ${PORT}`);
-  v2rayService.start(true);
-  require("./server_info");
+  Logger.log(`Panel is listening on port ${PORT}`);
+  v2rayService.start(true).then(() => {
+    Logger.log("v2ray core fully started")
+    require("./server_info");
+    cron.schedule('* * * * * *', () => {
+      context.store.callJobs();
+    });
+  });
 });
 
 process.on('uncaughtException', function (err) {
-  console.log(err);
+  Logger.error(err);
 });

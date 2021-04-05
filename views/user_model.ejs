@@ -38,6 +38,10 @@
             <% } %>
         </a-form-item>
 
+        <a-form-item label="maximum daily traffic">
+            <a-input v-model.trim="userModal.user.maximum_daily_traffic"></a-input>
+        </a-form-item>
+
         <a-form-item label="enable">
             <a-switch v-model="userModal.user.enable"></a-switch>
         </a-form-item>
@@ -58,7 +62,7 @@
         constructor({ 
             remark, inboundId, expires, maximum_users,
             username, agent, id, email, password, enable, protocol,
-            maximum_ips, status
+            maximum_ips, maximum_daily_traffic, status
         }) {
             this.username = username;
             this.remark = remark || '🌐 SwiftSSH (' + (location.host.split(".")[0]).toUpperCase() + ')';
@@ -72,6 +76,7 @@
             this.agent = agent;
             this.id = id;
             this.status = status;
+            this.maximum_daily_traffic = maximum_daily_traffic || '1 GB';
         }
     }
 

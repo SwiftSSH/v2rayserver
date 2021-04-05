@@ -4,8 +4,9 @@ const url = require('url');
 const V2rayAPI = require('./v2ray_api');
 const fs = require('fs');
 const context = require('./context');
+const instances = require('./instances');
 const utils = require("./utils");
-const extend = require('xtend');
+const Logger = require('./logger');
 const moment = require('moment');
 const constants = require("./constants");
 const configuration = require('./v2ray_config');
@@ -50,13 +51,13 @@ V2RAY.prototype.getAPI = function () {
             return api;
         }
     } catch(e) {
-        console.log(e.message)
+        Logger.error("v2ray getAPI", e.message)
     }
 };
 
 V2RAY.prototype.restart = function() {
     if(!this.restarting) {
-        console.log("Restarting v2ray Service after 10 seconds");
+        Logger.log("Restarting v2ray Service after 10 seconds");
         this.restarting = true;
         setTimeout(() => {
             this.stop();
@@ -74,7 +75,7 @@ V2RAY.prototype.config = function () {
         configTemplate.routing.rules = rules;
         return configTemplate;
     } catch(e) {
-        console.log(e.message);
+        Logger.error(e.message);
     }
 };
 
@@ -83,9 +84,9 @@ V2RAY.prototype.start = async function(freshStart) {
     let executable2 = `${this.v2rayPath}/v2ctl`;
 
     if(freshStart && !fs.existsSync(executable)) {
-        console.log("Installing v2ray service");
+        Logger.log("Installing v2ray service");
         return utils.installV2RAY().then(() => {
-            console.log("Done installing V2ray");
+            Logger.log("Done installing V2ray");
             this.start();
         });
     }
@@ -97,7 +98,7 @@ V2RAY.prototype.start = async function(freshStart) {
     this.v2rayProc.stdout.on('data', (data) => {
         this.running = true;
         if(!this.apiLoaded) {
-            context.instances.set('v2rayApi', this.getAPI());
+            instances.set('v2rayApi', this.getAPI());
             this.apiLoaded = true;
         }
         this.logger(`${data}`);
@@ -106,11 +107,11 @@ V2RAY.prototype.start = async function(freshStart) {
     this.v2rayProc.stderr.on('data', (data) => {
         this.message = `${data}`.split("\n")[0];
         this.code = 3;
-        console.log(this.message)
+        Logger.error("v2ray stderr", this.message)
     });
   
     this.v2rayProc.stdin.on('error', (e) => {
-        console.log("error", e.message)
+        Logger.error("v2ray stdin", e.message)
         this.message = e.message;
         this.restarting = false
     });
@@ -124,8 +125,8 @@ V2RAY.prototype.start = async function(freshStart) {
     this.v2rayProc.stdin.write(JSON.stringify(config));
     this.v2rayProc.stdin.end();
     this.code = 0;
-    this.restarting = false
-    context.instances.set('v2rayService', this);
+    this.restarting = false;
+    instances.set('v2rayService', this);
     context.data.set('v2rayVersion', await this.version());
 
     this.onlineStatusInterval = setInterval(() => {
@@ -151,6 +152,7 @@ V2RAY.prototype.start = async function(freshStart) {
             });
         });
     }, 5000);
+    await delay(2000);
 };
 
 V2RAY.prototype.isUserOnline = function(userId) {
@@ -203,7 +205,7 @@ V2RAY.prototype.logger = function (logStr) {
             output.accepted = false;
             this.accessLog(output);
         } else {
-            console.log(logStr);
+            Logger.log(logStr);
         }
     }
     
@@ -215,7 +217,7 @@ V2RAY.prototype.logger = function (logStr) {
 };
 
 V2RAY.prototype.accessLog = function(log) {
-    if(process.env.NODE_ENV !== constants.env.PRODUCTION) console.log(log);
+    Logger.debug('v2ray accessLog', log);
     let data = { address: log.source.ip, timestamp: log.timestamp };
     if(log.tag !== 'api' && log.accepted){
         if(this.clients.has(log.tag)){
@@ -244,7 +246,7 @@ V2RAY.prototype.handleConnections = function(userId) {
     /** detect simultineous connection by one uuid */
     if(client) {
         let user = context.store.getUser(client.userId);
-        if(!user) return console.log(`user ${client.userId} not found`);
+        if(!user) return Logger.debug(`user ${client.userId} not found`);
         let maximum_ips = user.maximum_ips || constants.MAX_IPS_PER_USER;
         if(client.ips.length > maximum_ips && !user.barned) {
             let lastAccessed = moment(client.ips[0].timestamp);
@@ -274,7 +276,7 @@ V2RAY.prototype.stop = function() {
         this.code = 1;
         this.restarting = false;
         clearInterval(this.onlineStatusInterval);
-        console.log("V2RAY service stopped");
+        Logger.log("V2RAY service stopped");
     }
 };
 
@@ -325,8 +327,8 @@ V2RAY.prototype.getTraffic = function(type, tag, reset=true) {
 
 V2RAY.prototype.startHostChecker = async function(v2RayConfig) {
     this.v2rayProc = spawn(`${this.v2rayPath}/v2ray`, ["-config=stdin:", "-format", "json"]);
-    this.v2rayProc.stderr.on('data', (data) => console.log(`${data}`));
-    this.v2rayProc.stdout.on('data', (data) => console.log(`${data}`));
+    this.v2rayProc.stderr.on('data', (data) => Logger.error(`${data}`));
+    this.v2rayProc.stdout.on('data', (data) => Logger.log(`${data}`));
     this.v2rayProc.stdin.write(JSON.stringify(v2RayConfig));
     this.v2rayProc.stdin.end();
     return this.v2rayProc;

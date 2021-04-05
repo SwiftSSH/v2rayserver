@@ -8,18 +8,20 @@ const net = require('net');
 const fs = require('fs');
 const socketPath = '/tmp/node-python-sock';
 const extend = require('xtend');
+const cron = require('node-cron');
 const context = require('./context');
+const instances = require("./instances");
 
 const handler = (socket) => {
   socket.on('data', (bytes) => {
     const msg = bytes.toString();
     if (msg === 'python connected') {
-      return setInterval(() => {
-        socket.write('get_status'); 
-      }, 2000);
+      return cron.schedule('* * * * * *', () => {
+        socket.write('get_status');
+      });
     }   
   
-    let v2rayService = context.instances.get("v2rayService");
+    let v2rayService = instances.get("v2rayService");
     let data = JSON.parse(msg.toString().replace(/[\'|\)|\(]/g, '"'));
     data.loads = data.loads.split(', ').map((load) => Number(load));
 

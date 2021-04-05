@@ -4,6 +4,7 @@ const utils = require("../utils");
 const context = require('../context');
 const extend = require("xtend");
 const constants = require('../constants');
+const instances = require("../instances");
 
 let adminCheck = function(req, res, next) {
     if(res.locals.admin) {
@@ -13,7 +14,7 @@ let adminCheck = function(req, res, next) {
 };
 
 router.get('/info', adminCheck, function (req, res) {
-    let service = context.instances.get("v2rayService");
+    let service = instances.get("v2rayService");
     let connections = service ? service.getClients() : [];
     res.json(extend(context.store.getRequestsInfo(), {
         ips: connections.map((connection) => {
@@ -79,6 +80,9 @@ router.post('/inbound/add/user/:in_id', JsonBody, async function(req, res) {
     let users = context.store.getUsersByInboundId(user.inboundId);
 
     if(inbound) {
+        if(utils.formatTrafficToBytes(user.maximum_daily_traffic) > utils.formatTrafficToBytes(inbound.maximum_daily_traffic)) {
+            return res.json({ msg: "User exceeded maximum daily traffic", success: false });
+        }
         if(inbound && (users.length < inbound.maximum_users)){
             let userId = await context.store.addUser(user);
             return res.json({ userId, msg: userId ? 'Successfully added user': 'Failed to add user', success: true });
