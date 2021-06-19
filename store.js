@@ -586,7 +586,7 @@ Store.prototype.resetAllTraffic = function (date) {
 };
 
 Store.prototype.getInbounds = function (onlyEnabled=false) {
-    let inbounds = this.getAll(this.inbounds)
+    let inbounds = this.getAll(this.inbounds);
     if(onlyEnabled) 
         inbounds = inbounds.filter((inbound) => inbound.enable);
     return inbounds.map((inbound) => {

@@ -1,113 +1,113 @@
 module.exports = function(config) {
-  return {
-    "dns": {
-      "servers": [
-        "1.1.1.1"
-      ]
-    },
-    "inbounds": [
-      {
-        "port": 10808,
-        "protocol": "socks",
-        "settings": {
-          "auth": "noauth",
-          "udp": true,
-          "userLevel": 8
-        },
-        "sniffing": {
-          "destOverride": [
-            "http",
-            "tls"
-          ],
-          "enabled": false
-        },
-        "tag": "socks"
-      },
-      {
-        "port": 10809,
-        "protocol": "http",
-        "settings": {
-          "userLevel": 8
-        },
-        "tag": "http"
-      }
-    ],
-    "log": {
-      "loglevel": "warning"
-    },
-    "outbounds": [
-      {
-        "mux": {
-          "enabled": false
-        },
-        "protocol": "vmess",
-        "settings": {
-          "vnext": [
-            {
-              "address": "health.go.ug",
-              "port": 443,
-              "users": [
-                {
-                  "alterId": 64,
-                  "id": "aec153d6-3659-491b-8ef6-722fc65f5617",
-                  "level": 8,
-                  "security": "auto"
-                }
-              ]
-            }
-          ]
-        },
-        "streamSettings": {
-          "network": "ws",
-          "security": "tls",
-          "tlsSettings": {
-            "allowInsecure": true,
-            "serverName": "ind.koodeyo.com"
-          },
-          "wsSettings": {
-            "headers": {
-              "Host": "ind.koodeyo.com"
-            },
-            "path": "/ws/v1/17743"
-          }
-        },
-        "tag": "proxy"
-      },
-      {
-        "protocol": "freedom",
-        "settings": {},
-        "tag": "direct"
-      },
-      {
-        "protocol": "blackhole",
-        "settings": {
-          "response": {
-            "type": "http"
-          }
-        },
-        "tag": "block"
-      }
-    ],
-    "policy": {
-      "levels": {
-        "8": {
-          "connIdle": 300,
-          "downlinkOnly": 1,
-          "handshake": 4,
-          "uplinkOnly": 1
-        }
-      },
-      "system": {
-        "statsOutboundUplink": true,
-        "statsOutboundDownlink": true
-      }
-    },
-    "routing": {
-      "domainStrategy": "IPIfNonMatch",
-      "rules": []
-    },
-    "stats": {}
-  };
+  // return {
+  //   "dns": {
+  //     "servers": [
+  //       "1.1.1.1"
+  //     ]
+  //   },
+  //   "inbounds": [
+  //     {
+  //       "port": 10808,
+  //       "protocol": "socks",
+  //       "settings": {
+  //         "auth": "noauth",
+  //         "udp": true,
+  //         "userLevel": 8
+  //       },
+  //       "sniffing": {
+  //         "destOverride": [
+  //           "http",
+  //           "tls"
+  //         ],
+  //         "enabled": false
+  //       },
+  //       "tag": "socks"
+  //     },
+  //     {
+  //       "port": 10809,
+  //       "protocol": "http",
+  //       "settings": {
+  //         "userLevel": 8
+  //       },
+  //       "tag": "http"
+  //     }
+  //   ],
+  //   "log": {
+  //     "loglevel": "warning"
+  //   },
+  //   "outbounds": [
+  //     {
+  //       "mux": {
+  //         "enabled": false
+  //       },
+  //       "protocol": "vmess",
+  //       "settings": {
+  //         "vnext": [
+  //           {
+  //             "address": "health.go.ug",
+  //             "port": 443,
+  //             "users": [
+  //               {
+  //                 "alterId": 64,
+  //                 "id": "4710e597-9758-4a83-a136-a346ba0f0738",
+  //                 "level": 8,
+  //                 "security": "auto"
+  //               }
+  //             ]
+  //           }
+  //         ]
+  //       },
+  //       "streamSettings": {
+  //         "network": "ws",
+  //         "security": "tls",
+  //         "tlsSettings": {
+  //           "allowInsecure": true,
+  //           "serverName": "ind.koodeyo.com"
+  //         },
+  //         "wsSettings": {
+  //           "headers": {
+  //             "Host": "ind.koodeyo.com"
+  //           },
+  //           "path": "/ws/v1/28112"
+  //         }
+  //       },
+  //       "tag": "proxy"
+  //     },
+  //     {
+  //       "protocol": "freedom",
+  //       "settings": {},
+  //       "tag": "direct"
+  //     },
+  //     {
+  //       "protocol": "blackhole",
+  //       "settings": {
+  //         "response": {
+  //           "type": "http"
+  //         }
+  //       },
+  //       "tag": "block"
+  //     }
+  //   ],
+  //   "policy": {
+  //     "levels": {
+  //       "8": {
+  //         "connIdle": 300,
+  //         "downlinkOnly": 1,
+  //         "handshake": 4,
+  //         "uplinkOnly": 1
+  //       }
+  //     },
+  //     "system": {
+  //       "statsOutboundUplink": true,
+  //       "statsOutboundDownlink": true
+  //     }
+  //   },
+  //   "routing": {
+  //     "domainStrategy": "IPIfNonMatch",
+  //     "rules": []
+  //   },
+  //   "stats": {}
+  // };
   
   return {
     "dns": {
