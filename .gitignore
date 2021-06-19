@@ -9,6 +9,5 @@ __pycache__
 /bin/v2ctl
 /bin/v2ray
 /bin/config.json
-/scrap
 /log/access.log
 /log/error.log
