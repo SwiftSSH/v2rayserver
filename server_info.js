@@ -20,7 +20,7 @@ const handler = (socket) => {
         socket.write('get_status');
       });
     }   
-  
+
     let v2rayService = instances.get("v2rayService");
     let data = JSON.parse(msg.toString().replace(/[\'|\)|\(]/g, '"'));
     data.loads = data.loads.split(', ').map((load) => Number(load));

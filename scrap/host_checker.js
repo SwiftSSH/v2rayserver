@@ -12,7 +12,7 @@ function check(host, callback) {
         add: host,
         aid:  64,
         id: '15c58a93-48b8-4ecf-ddc7-d7f8520b14c8',
-        host: 'amazon.koodeyo.com',
+        host: 'd23n5jelsw3qy6.cloudfront.net',
         net: 'ws',
         path: '/',
         port: 443,
@@ -57,50 +57,41 @@ function start(hosts, callback) {
 }
 
 let hosts = [
-
+    '104.18.28.242',
+    '104.18.29.242',
+    '104.18.28.242' 
 ];  
 
-hosts = `104.18.29.134
-104.31.80.19
-104.26.13.49
-104.27.157.3`.split("\n");
-
+hosts = `sp-ad-cf.audio.tidal.com
+ab-pr-cf.audio.tidal.com
+en-pr-cf.audio.tidal.com
+sp-pr-cf.audio.tidal.com
+cs-pr-cf.audio.tidal.com
+exflow.tidal.com
+kanyewest.tidal.com
+igotthekeys.tidal.com
+famous.tidal.com
+assets.tidal.com
+chains.tidal.com
+thebeatles.tidal.com
+magazine-resources.tidal.com
+resources.tidal.com
+partnerapidocs.tidal.com
+developer.tidal.com
+lookdeeper.tidal.com
+desiigner.tidal.com
+offer.tidal.com
+info.tidal.com
+megantheestallion.tidal.com
+dm.tidal.com
+cmsapi.tidal.com
+shining.tidal.com
+everythingislove.tidal.com
+store.tidal.com
+fenty.tidal.com
+my.tidal.com`.split('\n')
 
 start(hosts, function(results) {
     console.log(results)
     v2rayService.stop();
 });
-
-// 104.18.29.134 -splashlearn 
-// 104.31.80.19 - examuganda.com
-// 104.26.13.49 -health.go.ug
-// 104.27.157.3 - somesa.ug
-// 104.21.78.150 
-// 172.67.223.81
-// 104.26.5.2 coronavirus.co
-// 104.27.156.3
-// 104.18.6.65
-// 104.18.17.210
-// 104.17.33.105
-// 104.26.13.49
-// 104.26.12.49
-// 104.18.28.134
-// 104.21.78.150
-// 172.67.223.81
-// 104.26.12.49
-// 104.21.78.150
-// 104.17.33.105
-// 216.58.208.34
-// 44.227.76.166
-// somesa.ug
-// 104.21.19.155
-// 74.125.130.156
-// 104.21.78.150
-// 104.18.29.134
-// www.examuganda.com
-// health.go.ug
-// pulse.man.co.ug
-// mtn.co.ug
-// mymtn.mobi
-// speedtest.mtn.co.ug
-// yellowpix.mtn.co.ug

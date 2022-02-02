@@ -20,3 +20,5 @@ bash <(curl -L -s https://raw.githubusercontent.com/wulabing/V2Ray_ws-tls_bash_o
 https://www.newcoupons.info/digitalocean-coupon-codes/
 ### Setting up public key authentication
 https://www.ssh.com/ssh/copy-id
+### BLOGS
+https://digi.ninja
