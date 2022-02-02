@@ -17,7 +17,7 @@
     "pm2-init-test": "pm2 deploy test.ecosystem.config.js production setup"
   },
   "keywords": [],
-  "author": "",
+  "author": "Paul Jeremiah Mugaya",
   "license": "ISC",
   "dependencies": {
     "@grpc/grpc-js": "^1.2.6",
