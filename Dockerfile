@@ -1,4 +1,4 @@
-FROM node:14
+FROM python3.10-nodejs17
 
 RUN apt-get update || : && apt-get install python -y
 
