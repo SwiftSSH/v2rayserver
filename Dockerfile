@@ -1,4 +1,4 @@
-FROM nikolaik/python-nodejs:latest
+FROM nikolaik/python-nodejs:python3.7-nodejs14
 
 # Create app directory
 WORKDIR /usr/src/app
