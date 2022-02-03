@@ -58,9 +58,5 @@
       "node_modules/*"
     ],
     "delay": "2500"
-  },
-  "engines": {
-    "node": "12.0.0",
-    "npm": "6.9.0"
   }
 }

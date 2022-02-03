@@ -1,4 +1,4 @@
-FROM nikolaik/python-nodejs:python3.8-nodejs12-alpine
+FROM nikolaik/python-nodejs:latest
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -20,7 +20,5 @@ COPY . .
 ENV PORT 80
 ENV NODE_ENV production
 EXPOSE ${PORT}
-
-# RUN apk add --no-cache mongodb mongodb-tools
 
 CMD [ "node", "app.js" ]
